@@ -32,7 +32,7 @@ numSubDomains = np.prod(subDomains)
 
 domain,sDL = PMMoTo.genDomainSubDomain(rank,size,subDomains,nodes,periodic,domainFile,PMMoTo.readPorousMediaXYZR)
 sDEDTL = PMMoTo.calcEDT(rank,domain,subDomains,sDL)
-d = PMMoTo.calcDrainage(rank,domain,sDL,inlet,sDEDTL)
+d = PMMoTo.calcDrainage(rank,size,domain,sDL,inlet,sDEDTL)
 
 if rank == 0:
     print("--- %s seconds ---" % (time.time() - start_time))
