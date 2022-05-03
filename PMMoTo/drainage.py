@@ -358,6 +358,74 @@ class Drainage(object):
                 if not matchedOut:
                     print("Set Not Matched! Hmmm",self.subDomain.ID,nbProc,ownSet)
 
+    def organizeSets(self,size,drainData):
+        if self.subDomain.ID == 0:
+            allMatchedSets = np.zeros([0,5],dtype=np.int64)
+            numSets = np.zeros(size,dtype=np.int64)
+            numBoundSets = np.zeros(size,dtype=np.int64)
+
+            for n in range(0,size):
+                allMatchedSets = np.append(allMatchedSets,drainData[n][0],axis=0)
+                numSets[n] = drainData[n][1]
+                numBoundSets[n] = drainData[n][2]
+
+            ### Propagate Inlet Info
+            for s in allMatchedSets:
+                if s[4] == 1:
+                    indexs = np.where( (allMatchedSets[:,0]==s[2])
+                                     & (allMatchedSets[:,1]==s[3]))[0].tolist()
+                    while indexs:
+                        ind = indexs.pop()
+                        addIndexs  = np.where( (allMatchedSets[:,0]==allMatchedSets[ind,2])
+                                             & (allMatchedSets[:,1]==allMatchedSets[ind,3])
+                                             & (allMatchedSets[:,4]==0) )[0].tolist()
+                        if addIndexs:
+                            indexs.extend(addIndexs)
+                        allMatchedSets[ind,4] = 1
+
+            ### Get Unique Entries and Inlet T(1)/F(0)
+            globalSetList = []
+            globalInletList = []
+            for s in allMatchedSets:
+                if [s[0],s[1]] not in globalSetList:
+                    globalSetList.append([s[0],s[1]])
+                    globalInletList.append(s[4])
+                else:
+                    ind = globalSetList.index([s[0],s[1]])
+                    globalInletList[ind] = s[4]
+            globalSetID = np.c_[np.asarray(globalSetList),-np.ones(len(globalSetList)),np.asarray(globalInletList)]
+
+            cID = 0
+            for s in allMatchedSets:
+                ind = np.where( (globalSetID[:,0]==s[0]) & (globalSetID[:,1]==s[1]))
+                if (globalSetID[ind,2] < 0):
+                    indNeigh = np.where( (globalSetID[:,0]==s[2]) & (globalSetID[:,1]==s[3]))
+                    if (globalSetID[indNeigh,2] < 0):
+                        globalSetID[indNeigh,2] = cID
+                        globalSetID[ind,2] = cID
+                        cID = cID + 1
+                    elif (globalSetID[indNeigh,2] > -1):
+                        globalSetID[ind,2] = globalSetID[indNeigh,2]
+                elif (globalSetID[ind,2] > -1):
+                    indNeigh = np.where( (globalSetID[:,0]==s[2]) & (globalSetID[:,1]==s[3]))
+                    if (globalSetID[indNeigh,2] < 0):
+                        globalSetID[indNeigh,2] = globalSetID[ind,2]
+
+            localSetStart = np.zeros(size,dtype=np.int64)
+            globalSetScatter = [globalSetID[np.where(globalSetID[:,0]==0)]]
+            localSetStart[0] = cID
+            for n in range(1,size):
+                localSetStart[n] = localSetStart[n-1] + numSets[n-1] - numBoundSets[n-1]
+                globalSetScatter.append(globalSetID[np.where(globalSetID[:,0]==n)])
+        else:
+            localSetStart = None
+            globalSetScatter = None
+
+        self.globalIndexStart = comm.scatter(localSetStart, root=0)
+        self.globalBoundarySetID = comm.scatter(globalSetScatter, root=0)
+
+
+
     def updateSetID(self):
         c = 0
         for s in self.Sets:
@@ -485,75 +553,8 @@ def calcDrainage(rank,size,domain,subDomain,inlet,EDT):
     drain.getBoundarySets()
     drain.drainCOMM()
     drain.correctBoundarySets()
-
-    ### Pass All matchedSets to proc 0 for global numbering and get local Set Counts for local GlobalID
-    ### Add Column for Inlet True(1) or False(0)
     drainData = [drain.matchedSets,drain.setCount,drain.boundSetCount]
     drainData = comm.gather(drainData, root=0)
-    if rank == 0:
-        allMatchedSets = np.zeros([0,5],dtype=np.int64)
-        numSets = np.zeros(size,dtype=np.int64)
-        numBoundSets = np.zeros(size,dtype=np.int64)
-
-        for n in range(0,size):
-            allMatchedSets = np.append(allMatchedSets,drainData[n][0],axis=0)
-            numSets[n] = drainData[n][1]
-            numBoundSets[n] = drainData[n][2]
-
-        ### Propagate Inlet Info
-        for s in allMatchedSets:
-            if s[4] == 1:
-                indexs = np.where( (allMatchedSets[:,0]==s[2])
-                                 & (allMatchedSets[:,1]==s[3]))[0].tolist()
-                while indexs:
-                    ind = indexs.pop()
-                    addIndexs  = np.where( (allMatchedSets[:,0]==allMatchedSets[ind,2])
-                                         & (allMatchedSets[:,1]==allMatchedSets[ind,3])
-                                         & (allMatchedSets[:,4]==0) )[0].tolist()
-                    if addIndexs:
-                        indexs.extend(addIndexs)
-                    allMatchedSets[ind,4] = 1
-
-        ### Get Unique Entries and Inlet T(1)/F(0)
-        globalSetList = []
-        globalInletList = []
-        for s in allMatchedSets:
-            if [s[0],s[1]] not in globalSetList:
-                globalSetList.append([s[0],s[1]])
-                globalInletList.append(s[4])
-            else:
-                ind = globalSetList.index([s[0],s[1]])
-                globalInletList[ind] = s[4]
-        globalSetID = np.c_[np.asarray(globalSetList),-np.ones(len(globalSetList)),np.asarray(globalInletList)]
-
-        cID = 0
-        for s in allMatchedSets:
-            ind = np.where( (globalSetID[:,0]==s[0]) & (globalSetID[:,1]==s[1]))
-            if (globalSetID[ind,2] < 0):
-                indNeigh = np.where( (globalSetID[:,0]==s[2]) & (globalSetID[:,1]==s[3]))
-                if (globalSetID[indNeigh,2] < 0):
-                    globalSetID[indNeigh,2] = cID
-                    globalSetID[ind,2] = cID
-                    cID = cID + 1
-                elif (globalSetID[indNeigh,2] > -1):
-                    globalSetID[ind,2] = globalSetID[indNeigh,2]
-            elif (globalSetID[ind,2] > -1):
-                indNeigh = np.where( (globalSetID[:,0]==s[2]) & (globalSetID[:,1]==s[3]))
-                if (globalSetID[indNeigh,2] < 0):
-                    globalSetID[indNeigh,2] = globalSetID[ind,2]
-
-        localSetStart = np.zeros(size,dtype=np.int64)
-        globalSetScatter = [globalSetID[np.where(globalSetID[:,0]==0)]]
-        localSetStart[0] = cID
-        for n in range(1,size):
-            localSetStart[n] = localSetStart[n-1] + numSets[n-1] - numBoundSets[n-1]
-            globalSetScatter.append(globalSetID[np.where(globalSetID[:,0]==n)])
-    else:
-        localSetStart = None
-        globalSetScatter = None
-
-    drain.globalIndexStart = comm.scatter(localSetStart, root=0)
-    drain.globalBoundarySetID = comm.scatter(globalSetScatter, root=0)
-
+    drain.organizeSets(size,drainData)
     drain.updateSetID()
     drain.getNWP()
