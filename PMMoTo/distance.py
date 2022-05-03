@@ -7,11 +7,7 @@ comm = MPI.COMM_WORLD
 """ Solid = 0, Pore = 1 """
 
 """ TO DO:
-           Generate Distance Stastics
-           Get Load Balacing Statistics
            Cython
-           Switch to pass peridic info and not generate from samples??
-           Redo Domain decomposition - Maybe
 """
 
 class EDT(object):

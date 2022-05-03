@@ -3,11 +3,20 @@ from mpi4py import MPI
 from MAtools import domainGen
 comm = MPI.COMM_WORLD
 
+""" Solid = 0, Pore = 1 """
+
+""" TO DO:
+           Switch to pass peridic info and not generate from samples??
+           Redo Domain decomposition - Maybe
+"""
+
+
 class Orientation(object):
     def __init__(self):
         self.numFaces = 6
         self.numEdges = 12
         self.numCorners = 8
+        self.numNeighbors = 26
         self.faces = {0:{'ID':(1,0,0),  'oppIndex':1, 'nC':0, 'nM':1, 'nN':2, 'dir':-1},
                       1:{'ID':(-1,0,0), 'oppIndex':0, 'nC':0, 'nM':1, 'nN':2, 'dir':1},
                       2:{'ID':(0,1,0),  'oppIndex':3, 'nC':1, 'nM':0, 'nN':2, 'dir':-1},
@@ -37,6 +46,33 @@ class Orientation(object):
                         6:{'ID':(-1,-1,1), 'oppIndex':1, 'faceIndex':(1,3,4)},
                         7:{'ID':(-1,-1,-1),'oppIndex':0, 'faceIndex':(1,3,5)},
                         }
+        self.directions ={0 :{'ID':[-1,-1,-1],'index': 0 ,'oppIndex': 25},
+                          1 :{'ID':[-1,-1,0], 'index': 1 ,'oppIndex': 24},
+                          2 :{'ID':[-1,-1,1], 'index': 2 ,'oppIndex': 23},
+                          3 :{'ID':[-1,0,-1], 'index': 3 ,'oppIndex': 22},
+                          4 :{'ID':[-1,0,0],  'index': 4 ,'oppIndex': 21},
+                          5 :{'ID':[-1,0,1],  'index': 5 ,'oppIndex': 20},
+                          6 :{'ID':[-1,1,-1], 'index': 6 ,'oppIndex': 19},
+                          7 :{'ID':[-1,1,0],  'index': 7 ,'oppIndex': 18},
+                          8 :{'ID':[-1,1,1],  'index': 8 ,'oppIndex': 17},
+                          9 :{'ID':[0,-1,-1], 'index': 9 ,'oppIndex': 16},
+                          10:{'ID':[0,-1,0],  'index': 10 ,'oppIndex': 15},
+                          11:{'ID':[0,-1,1],  'index': 11 ,'oppIndex': 14},
+                          12:{'ID':[0,0,-1],  'index': 12 ,'oppIndex': 13},
+                          13:{'ID':[0,0,1],   'index': 13 ,'oppIndex': 12},
+                          14:{'ID':[0,1,-1],  'index': 14 ,'oppIndex': 11},
+                          15:{'ID':[0,1,0],   'index': 15 ,'oppIndex': 10},
+                          16:{'ID':[0,1,1],   'index': 16 ,'oppIndex': 9},
+                          17:{'ID':[1,-1,-1], 'index': 17 ,'oppIndex': 8},
+                          18:{'ID':[1,-1,0],  'index': 18 ,'oppIndex': 7},
+                          19:{'ID':[1,-1,1],  'index': 19 ,'oppIndex': 6},
+                          20:{'ID':[1,0,-1],  'index': 20 ,'oppIndex': 5},
+                          21:{'ID':[1,0,0],   'index': 21 ,'oppIndex': 4},
+                          22:{'ID':[1,0,1],   'index': 22 ,'oppIndex': 3},
+                          23:{'ID':[1,1,-1],  'index': 23 ,'oppIndex': 2},
+                          24:{'ID':[1,1,0],   'index': 24 ,'oppIndex': 1},
+                          25:{'ID':[1,1,1],   'index': 25 ,'oppIndex': 0},
+                          }
 
 class Domain(object):
     def __init__(self,nodes,domainSize,subDomains,periodic):
@@ -73,6 +109,8 @@ class subDomain(object):
         self.subDomains  = subDomains
         self.Domain      = Domain
         self.Orientation = Orientation
+        self.boundary    = False
+        self.boundaryID  = [0,0,0]
         self.nodes       = np.zeros([3],dtype=np.int64)
         self.indexStart  = np.zeros([3],dtype=np.int64)
         self.subID       = np.zeros([3],dtype=np.int64)
@@ -97,6 +135,27 @@ class subDomain(object):
                 for k in range(0,self.subDomains[2]):
                     self.lookUpID[i,j,k] = n
                     if n == self.ID:
+                        if (i == 0):
+                            self.boundary = True
+                            self.boundaryID[0] = -1
+                        elif (i == self.subDomains[0]-1):
+                            self.boundary = True
+                            self.boundaryID[0] = 1
+
+                        if (j == 0):
+                            self.boundary = True
+                            self.boundaryID[1] = -1
+                        elif (j == self.subDomains[1]-1):
+                            self.boundary = True
+                            self.boundaryID[1] = 1
+
+                        if (k == 0):
+                            self.boundary = True
+                            self.boundaryID[2] = -1
+                        elif(j == self.subDomains[2]-1):
+                            self.boundary = True
+                            self.boundaryID[2] = 1
+
                         self.subID[0] = i
                         self.subID[1] = j
                         self.subID[2] = k

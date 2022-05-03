@@ -24,12 +24,15 @@ if rank==0:
 subDomains = [2,2,2]
 nodes = [51,51,51]
 periodic = [False,False,False]
+inlet  = [0,0,-1]
+outlet = [0,0, 1]
 domainFile = open('testDomains/pack_sub.out', 'r')
 
 numSubDomains = np.prod(subDomains)
 
 domain,sDL = PMMoTo.genDomainSubDomain(rank,size,subDomains,nodes,periodic,domainFile,PMMoTo.readPorousMediaXYZR)
 sDEDTL = PMMoTo.calcEDT(rank,domain,subDomains,sDL)
+d = PMMoTo.calcDrainage(rank,domain,sDL,inlet,sDEDTL)
 
 if rank == 0:
     print("--- %s seconds ---" % (time.time() - start_time))
