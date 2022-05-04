@@ -3,7 +3,15 @@ from mpi4py import MPI
 from scipy.spatial import KDTree
 import edt
 import pdb
+from . import distance
 comm = MPI.COMM_WORLD
+
+""" TO DO:
+           Periodic
+           Phases
+           Clean Up and Optimize
+           Cython
+"""
 
 
 class Set(object):
@@ -160,7 +168,25 @@ class Drainage(object):
                                 inlet = True
 
 
-                        globIndex = [self.subDomain.indexStart[0]+i-1,self.subDomain.indexStart[1]+j-1,self.subDomain.indexStart[2]+k-1]
+                        iLoc = self.subDomain.indexStart[0]+i-1
+                        jLoc = self.subDomain.indexStart[1]+j-1
+                        kLoc = self.subDomain.indexStart[2]+k-1
+
+                        if iLoc < 0:
+                            iLoc = self.Domain.nodes[0]-1
+                        elif iLoc >= self.Domain.nodes[0]:
+                            iLoc = 0
+                        if jLoc < 0:
+                            jLoc = self.Domain.nodes[1]-1
+                        elif jLoc >= self.Domain.nodes[1]:
+                            jLoc = 0
+                        if kLoc < 0:
+                            kLoc = self.Domain.nodes[2]-1
+                        elif kLoc >= self.Domain.nodes[2]:
+                            kLoc = 0
+
+
+                        globIndex = [iLoc,jLoc,kLoc]
                         self.nodeInfo[c] = Node(ID=c, localIndex = [i-1,j-1,k-1], globalIndex = globIndex, boundary = boundary, boundaryID = boundaryID, inlet = inlet)
                         self.nodeTable[i-1,j-1,k-1] = c
 
@@ -356,7 +382,8 @@ class Drainage(object):
                     testSetKey = testSetKey + 1
 
                 if not matchedOut:
-                    print("Set Not Matched! Hmmm",self.subDomain.ID,nbProc,ownSet)
+                    if self.subDomain.ID == 0 or self.subDomain.ID == 4:
+                        print("Set Not Matched! Hmmm",self.subDomain.ID,nbProc,ownSet,ownNodes)
 
     def organizeSets(self,size,drainData):
         if self.subDomain.ID == 0:
@@ -424,8 +451,6 @@ class Drainage(object):
         self.globalIndexStart = comm.scatter(localSetStart, root=0)
         self.globalBoundarySetID = comm.scatter(globalSetScatter, root=0)
 
-
-
     def updateSetID(self):
         c = 0
         for s in self.Sets:
@@ -462,8 +487,8 @@ class Drainage(object):
         for n in NWNodes:
             self.nwp[n[0],n[1],n[2]] = 0
 
-        self.nwpDist = edt.edt3d(self.nwp, anisotropy=(self.Domain.dX, self.Domain.dY, self.Domain.dZ))
-        self.nwpFinal = np.where( (self.nwpDist <  self.probeD) & (self.subDomain.grid == 1),1,0)
+    def finalizeNWP(self,nwpDist):
+        self.nwp= np.where( (nwpDist <=  self.probeD) & (self.subDomain.grid == 1),1,0)
 
     def drainCOMM(self):
 
@@ -558,3 +583,11 @@ def calcDrainage(rank,size,domain,subDomain,inlet,EDT):
     drain.organizeSets(size,drainData)
     drain.updateSetID()
     drain.getNWP()
+    print("HI")
+    nwEDT = distance.calcEDT(rank,domain,subDomain,drain.nwp)
+    print("HI2")
+    drain.finalizeNWP(nwEDT.EDT)
+
+
+
+    return drain

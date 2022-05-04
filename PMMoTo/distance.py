@@ -7,6 +7,7 @@ comm = MPI.COMM_WORLD
 """ Solid = 0, Pore = 1 """
 
 """ TO DO:
+           Allow Mulitple Phases?
            Cython
 """
 
@@ -494,14 +495,14 @@ class EDT(object):
                     orientID = self.Orientation.faces[fIndex]['ID']
                     if orientID in self.solidsAll[neigh]['orientID']:
                         if (perCorner.any() != 0):
-                            perCorrection = perCorner*self.Domain.domainLength*periodic
+                            perCorrection = perCorner*self.Domain.domainLength*self.Domain.periodic
                             self.solidsAll[neigh]['orientID'][orientID] =np.append(self.solidsAll[neigh]['orientID'][orientID],data-perCorrection,axis=0)
                         else:
                             self.solidsAll[neigh]['orientID'][orientID] =np.append(self.solidsAll[neigh]['orientID'][orientID],data,axis=0)
                     else:
                         self.solidsAll[neigh]['orientID'][orientID] = data
                         if (perCorner.any() != 0):
-                            perCorrection = perCorner*self.Domain.domainLength*periodic
+                            perCorrection = perCorner*self.Domain.domainLength**self.Domain.periodic
                             self.solidsAll[neigh]['orientID'][orientID] = self.solidsAll[neigh]['orientID'][orientID]-perCorrection
             if neigh == self.ID:
                 faceIndex = self.Orientation.corners[cIndex]['faceIndex']
@@ -509,7 +510,7 @@ class EDT(object):
                 for fIndex in faceIndex:
                     orientID = self.Orientation.faces[fIndex]['ID']
                     if (perCorner.any() != 0):
-                        perCorrection = perCorner*self.Domain.domainLength*periodic
+                        perCorrection = perCorner*self.Domain.domainLength**self.Domain.periodic
                         self.solidsAll[neigh]['orientID'][orientID] = np.append(self.solidsAll[neigh]['orientID'][orientID],self.cornerSolids[oppIndex]-perCorrection,axis=0)
                     else:
                         self.solidsAll[neigh]['orientID'][orientID] = np.append(self.solidsAll[neigh]['orientID'][orientID],self.cornerSolids[oppIndex],axis=0)
@@ -521,11 +522,11 @@ class EDT(object):
                             own[2][0]:own[2][1]]
         self.distVals,self.distCounts  = np.unique(ownEDT,return_counts=True)
 
-def calcEDT(rank,domain,subDomains,subDomain):
-    numSubDomains = np.prod(subDomains)
+def calcEDT(rank,domain,subDomain,grid):
 
-    gridIn = subDomain.grid
-    sDEDT = EDT(Domain = domain, ID = rank, subDomain = subDomain, Orientation = subDomain.Orientation, grid = gridIn)
+    #numSubDomains = np.prod(subDomain.Domain.subDomains)
+
+    sDEDT = EDT(Domain = domain, ID = rank, subDomain = subDomain, Orientation = subDomain.Orientation, grid = grid)
     sDEDT.getBoundarySolids()
     sDEDT.genLocalEDT()
     sDEDT.trimBoundarySolids()

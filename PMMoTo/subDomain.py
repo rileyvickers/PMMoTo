@@ -10,7 +10,6 @@ comm = MPI.COMM_WORLD
            Redo Domain decomposition - Maybe
 """
 
-
 class Orientation(object):
     def __init__(self):
         self.numFaces = 6
@@ -232,7 +231,6 @@ class subDomain(object):
                               self.z[-1] - self.z[0]]
 
     def genDomain(self,sphereData):
-        self.visited = np.zeros([self.x.shape[0],self.y.shape[0],self.z.shape[0]],dtype=np.int8)
         self.grid = domainGen(self.x,self.y,self.z,sphereData)
 
         if (np.sum(self.grid) == np.prod(self.nodes)):
