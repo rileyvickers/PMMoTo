@@ -536,7 +536,7 @@ def calcEDT(rank,domain,subDomain,grid):
     sDEDT.EDTComm()
     sDEDT.fixInterface()
 
-    EDTStats = True
+    EDTStats = False
     if EDTStats:
         sDEDT.genStats()
         EDTData = [sDEDT.ID,sDEDT.distVals,sDEDT.distCounts]

@@ -31,25 +31,36 @@ domainFile = open('testDomains/pack_sub.out', 'r')
 numSubDomains = np.prod(subDomains)
 
 domain,sDL = PMMoTo.genDomainSubDomain(rank,size,subDomains,nodes,periodic,domainFile,PMMoTo.readPorousMediaXYZR)
-sDEDTL = PMMoTo.calcEDT(rank,domain,subDomains,sDL)
-d = PMMoTo.calcDrainage(rank,size,domain,sDL,inlet,sDEDTL)
+sDEDTL = PMMoTo.calcEDT(rank,domain,sDL,sDL.grid)
+morphL = PMMoTo.morph(rank,domain,sDL)
+#drainL = PMMoTo.calcDrainage(rank,size,domain,sDL,inlet,sDEDTL)
 
+
+
+#### TESTING and PLOTTING ####
 if rank == 0:
     print("--- %s seconds ---" % (time.time() - start_time))
     sD = np.empty((numSubDomains), dtype = object)
     sDEDT = np.empty((numSubDomains), dtype = object)
+    #sDdrain = np.empty((numSubDomains), dtype = object)
+    sDmorph = np.empty((numSubDomains), dtype = object)
     sD[0] = sDL
     sDEDT[0] = sDEDTL
+    #sDdrain[0] = drainL
+    sDmorph[0] = morphL
     for neigh in range(1,numSubDomains):
         sD[neigh] = comm.recv(source=neigh)
         sDEDT[neigh] = comm.recv(source=neigh)
+        #sDdrain[neigh] = comm.recv(source=neigh)
+        sDmorph[neigh] = comm.recv(source=neigh)
 
 if rank > 0:
     for neigh in range(1,numSubDomains):
         if rank == neigh:
             comm.send(sDL,dest=0)
             comm.send(sDEDTL,dest=0)
-
+            #comm.send(drainL,dest=0)
+            comm.send(morphL,dest=0)
 
 
 if rank==0:
@@ -150,6 +161,46 @@ if rank==0:
 
         diffEDT = np.abs(realDT-checkEDT)
         print("L2 EDT Error Norm",np.linalg.norm(diffEDT) )
+
+
+        n = 1
+        grid = sDmorph[n].haloGrid
+        printGridOut = np.zeros([grid.size,5])
+        c = 0
+        for i in range(0,grid.shape[0]):
+            for j in range(0,grid.shape[1]):
+                for k in range(0,grid.shape[2]):
+                        printGridOut[c,0] = sD[n].indexStart[0] + i #sDAll[nn].x[i]
+                        printGridOut[c,1] = sD[n].indexStart[1] + j#sDAll[nn].y[j]
+                        printGridOut[c,2] = sD[n].indexStart[2] + k#sDAll[nn].z[k]
+                        printGridOut[c,3] = grid[i,j,k]
+                        printGridOut[c,4] = neigh
+                        c = c + 1
+        header = "x,y,z,Val,Neigh"
+        file = "dataDump/3dsubGridHalo_"+str(n)+".csv"
+        np.savetxt(file,printGridOut, delimiter=',',header=header)
+
+
+
+    # for nn in range(0,numSubDomains):
+    #     printGridOut = np.zeros([sD[nn].grid.size,7])
+    #     c = 0
+    #     for i in range(0,sD[nn].grid.shape[0]):
+    #         for j in range(0,sD[nn].grid.shape[1]):
+    #             for k in range(0,sD[nn].grid.shape[2]):
+    #                 if  sD[nn].grid[i,j,k] == 1:
+    #                     printGridOut[c,0] = sD[nn].x[i]#sDAll[nn].indexStart[0] + i #sDAll[nn].x[i]
+    #                     printGridOut[c,1] = sD[nn].y[j]#sDAll[nn].indexStart[1] + j#sDAll[nn].y[j]
+    #                     printGridOut[c,2] = sD[nn].z[k]#sDAll[nn].indexStart[2] + k#sDAll[nn].z[k]
+    #                     printGridOut[c,3] = sDdrain[nn].ind[i,j,k]
+    #                     printGridOut[c,4] = sD[nn].grid[i,j,k]
+    #                     printGridOut[c,5] = sDEDT[nn].EDT[i,j,k]
+    #                     printGridOut[c,6] = sDdrain[nn].nwp[i,j,k]
+    #                     c = c + 1
+    #
+    #     header = "x,y,z,Val,Grid,EDT,NWP"
+    #     file = "dataDump/3dsubGridIndicator_"+str(nn)+".csv"
+    #     np.savetxt(file,printGridOut, delimiter=',',header=header)
 
     # printGridOut = np.zeros([checkEDT.size,5])
     # c = 0

@@ -16,6 +16,8 @@ class Orientation(object):
         self.numEdges = 12
         self.numCorners = 8
         self.numNeighbors = 26
+        self.sendSlices = np.empty([self.numFaces,3],dtype=object)
+        self.recvSlices = np.empty([self.numFaces,3],dtype=object)
         self.faces = {0:{'ID':(1,0,0),  'oppIndex':1, 'nC':0, 'nM':1, 'nN':2, 'dir':-1},
                       1:{'ID':(-1,0,0), 'oppIndex':0, 'nC':0, 'nM':1, 'nN':2, 'dir':1},
                       2:{'ID':(0,1,0),  'oppIndex':3, 'nC':1, 'nM':0, 'nN':2, 'dir':-1},
@@ -72,6 +74,34 @@ class Orientation(object):
                           24:{'ID':[1,1,0],   'index': 24 ,'oppIndex': 1},
                           25:{'ID':[1,1,1],   'index': 25 ,'oppIndex': 0},
                           }
+
+    def getSendSlices(self,structRatio):
+        for fIndex in self.faces:
+            fID = self.faces[fIndex]['ID']
+            dir = self.faces[fIndex]['dir']
+            sliceLoc = fID*structRatio
+            for n in range(sliceLoc.size):
+                if np.abs(sliceLoc[n]) > 0:
+                    if dir < 0:
+                        self.sendSlices[fIndex,n] = slice(-structRatio[n],None)
+                    else:
+                        self.sendSlices[fIndex,n] = slice(None,structRatio[n])
+                else:
+                    self.sendSlices[fIndex,n] = slice(None,None)
+
+    def getRecieveSlices(self,pad,arr):
+        dim = arr.shape
+        if pad.shape != [3,2]:
+            pad = pad.reshape([3,2])
+
+        for fIndex in self.faces:
+            fID = self.faces[fIndex]['ID']
+            for n in range(len(fID)):
+                if np.abs(fID[n]) > 0:
+                    self.recvSlices[fIndex,n] = self.sendSlices[fIndex,n]
+                else:
+                    self.recvSlices[fIndex,n] = slice(0+pad[n,1],dim[n]-pad[n,0])
+
 
 class Domain(object):
     def __init__(self,nodes,domainSize,subDomains,periodic):
@@ -334,7 +364,7 @@ def genDomainSubDomain(rank,size,subDomains,nodes,periodic,domainFile,dataRead):
     sD.getXYZ()
     sD.genDomain(sphereData)
 
-    loadBalancing = True
+    loadBalancing = False
     if loadBalancing:
         sD.loadBalanceStats()
         loadData = [sD.ID,sD.poreNodes,sD.ownNodesTotal]
