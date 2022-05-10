@@ -4,6 +4,7 @@ from scipy.spatial import KDTree
 import edt
 import pdb
 from . import distance
+from . import morphology
 comm = MPI.COMM_WORLD
 
 """ TO DO:
@@ -464,20 +465,20 @@ class Drainage(object):
 
     def getNWP(self):
         NWNodes = []
-        self.nwp = np.ones_like(self.ind)
+        self.nwp = np.zeros_like(self.ind)
 
         if (self.subDomain.boundaryID[0] == -1 and self.inlet[0] == -1):
-            self.nwp[0,:,:] = 0
+            self.nwp[0,:,:] = 1
         if (self.subDomain.boundaryID[0] == 1 and self.inlet[0] == 1):
-            self.nwp[-1,:,:] = 0
+            self.nwp[-1,:,:] = 1
         if (self.subDomain.boundaryID[1] == -1 and self.inlet[1] == -1):
-            self.nwp[:,0,:] = 0
+            self.nwp[:,0,:] = 1
         if (self.subDomain.boundaryID[1] == 1 and self.inlet[1] == 1):
-            self.nwp[:,-1,:] = 0
+            self.nwp[:,-1,:] = 1
         if (self.subDomain.boundaryID[2] == -1 and self.inlet[2] == -1):
-            self.nwp[:,:,0] = 0
+            self.nwp[:,:,0] = 1
         if (self.subDomain.boundaryID[2] == 1 and self.inlet[2] == 1):
-            self.nwp[:,:,-1] = 0
+            self.nwp[:,:,-1] = 1
 
         for s in self.Sets:
             if s.inlet:
@@ -485,10 +486,10 @@ class Drainage(object):
                     NWNodes.append(node.localIndex)
 
         for n in NWNodes:
-            self.nwp[n[0],n[1],n[2]] = 0
+            self.nwp[n[0],n[1],n[2]] = 1
 
     def finalizeNWP(self,nwpDist):
-        self.nwp= np.where( (nwpDist <=  self.probeD) & (self.subDomain.grid == 1),1,0)
+        self.nwpFinal= np.where( (nwpDist ==  1) & (self.subDomain.grid == 1),1,0)
 
     def drainCOMM(self):
 
@@ -583,11 +584,7 @@ def calcDrainage(rank,size,domain,subDomain,inlet,EDT):
     drain.organizeSets(size,drainData)
     drain.updateSetID()
     drain.getNWP()
-    print("HI")
-    nwEDT = distance.calcEDT(rank,domain,subDomain,drain.nwp)
-    print("HI2")
-    drain.finalizeNWP(nwEDT.EDT)
-
-
-
+    morphL = morphology.morph(rank,domain,subDomain,drain.nwp,drain.probeD/2.)
+    drain.finalizeNWP(morphL.gridOut)
+    print(drain.probeD,domain.dX,domain.dY,domain.dZ)
     return drain

@@ -16,8 +16,14 @@ class Orientation(object):
         self.numEdges = 12
         self.numCorners = 8
         self.numNeighbors = 26
-        self.sendSlices = np.empty([self.numFaces,3],dtype=object)
-        self.recvSlices = np.empty([self.numFaces,3],dtype=object)
+
+        self.sendFSlices = np.empty([self.numFaces,3],dtype=object)
+        self.recvFSlices = np.empty([self.numFaces,3],dtype=object)
+        self.sendESlices = np.empty([self.numEdges,3],dtype=object)
+        self.recvESlices = np.empty([self.numEdges,3],dtype=object)
+        self.sendCSlices = np.empty([self.numCorners,3],dtype=object)
+        self.recvCSlices = np.empty([self.numCorners,3],dtype=object)
+
         self.faces = {0:{'ID':(1,0,0),  'oppIndex':1, 'nC':0, 'nM':1, 'nN':2, 'dir':-1},
                       1:{'ID':(-1,0,0), 'oppIndex':0, 'nC':0, 'nM':1, 'nN':2, 'dir':1},
                       2:{'ID':(0,1,0),  'oppIndex':3, 'nC':1, 'nM':0, 'nN':2, 'dir':-1},
@@ -75,21 +81,58 @@ class Orientation(object):
                           25:{'ID':[1,1,1],   'index': 25 ,'oppIndex': 0},
                           }
 
-    def getSendSlices(self,structRatio):
+    def getSendSlices(self,structRatio,buffer):
+
         for fIndex in self.faces:
             fID = self.faces[fIndex]['ID']
-            dir = self.faces[fIndex]['dir']
-            sliceLoc = fID*structRatio
-            for n in range(sliceLoc.size):
-                if np.abs(sliceLoc[n]) > 0:
-                    if dir < 0:
-                        self.sendSlices[fIndex,n] = slice(-structRatio[n],None)
+            for n in range(len(fID)):
+                if fID[n] != 0:
+                    if fID[n] > 0:
+                        buf = None
+                        if buffer[n][1] > 0:
+                            buf = -buffer[n][1]*2
+                        self.sendFSlices[fIndex,n] = slice(-structRatio[n]-buffer[n][1]*2,buf)
                     else:
-                        self.sendSlices[fIndex,n] = slice(None,structRatio[n])
+                        buf = None
+                        if buffer[n][0] > 0:
+                            buf = buffer[n][0]*2
+                        self.sendFSlices[fIndex,n] = slice(buf,structRatio[n]+buffer[n][0]*2)
                 else:
-                    self.sendSlices[fIndex,n] = slice(None,None)
+                    self.sendFSlices[fIndex,n] = slice(None,None)
 
-    def getRecieveSlices(self,pad,arr):
+
+        for eIndex in self.edges:
+            eID = self.edges[eIndex]['ID']
+            for n in range(len(eID)):
+                if eID[n] != 0:
+                    if eID[n] > 0:
+                        buf = None
+                        if buffer[n][1] > 0:
+                            buf = -buffer[n][1]*2
+                        self.sendESlices[eIndex,n] = slice(-structRatio[n]-buffer[n][1]*2,buf)
+                    else:
+                        buf = None
+                        if buffer[n][0] > 0:
+                            buf = buffer[n][0]*2
+                        self.sendESlices[eIndex,n] = slice(buf,structRatio[n]+buffer[n][0]*2)
+                else:
+                    self.sendESlices[eIndex,n] = slice(None,None)
+
+        for cIndex in self.corners:
+            cID = self.corners[cIndex]['ID']
+            for n in range(len(cID)):
+                if cID[n] > 0:
+                    buf = None
+                    if buffer[n][1] > 0:
+                        buf = -buffer[n][1]*2
+                    self.sendCSlices[cIndex,n] = slice(-structRatio[n]-buffer[n][1]*2,buf)
+                else:
+                    buf = None
+                    if buffer[n][0] > 0:
+                        buf = buffer[n][0]*2
+                    self.sendCSlices[cIndex,n] = slice(buf,structRatio[n]+buffer[n][0]*2)
+
+    def getRecieveSlices(self,structRatio,pad,arr):
         dim = arr.shape
         if pad.shape != [3,2]:
             pad = pad.reshape([3,2])
@@ -97,11 +140,32 @@ class Orientation(object):
         for fIndex in self.faces:
             fID = self.faces[fIndex]['ID']
             for n in range(len(fID)):
-                if np.abs(fID[n]) > 0:
-                    self.recvSlices[fIndex,n] = self.sendSlices[fIndex,n]
+                if fID[n] != 0:
+                    if fID[n] > 0:
+                        self.recvFSlices[fIndex,n] = slice(-structRatio[n],None)
+                    else:
+                        self.recvFSlices[fIndex,n] = slice(None,structRatio[n])
                 else:
-                    self.recvSlices[fIndex,n] = slice(0+pad[n,1],dim[n]-pad[n,0])
+                    self.recvFSlices[fIndex,n] = slice(0+pad[n,1],dim[n]-pad[n,0])
 
+        for eIndex in self.edges:
+            eID = self.edges[eIndex]['ID']
+            for n in range(len(eID)):
+                if eID[n] != 0:
+                    if eID[n] > 0:
+                        self.recvESlices[eIndex,n] = slice(-structRatio[n],None)
+                    else:
+                        self.recvESlices[eIndex,n] = slice(None,structRatio[n])
+                else:
+                    self.recvESlices[eIndex,n] = slice(0+pad[n,1],dim[n]-pad[n,0])
+
+        for cIndex in self.corners:
+            cID = self.corners[cIndex]['ID']
+            for n in range(len(cID)):
+                if cID[n] > 0:
+                    self.recvCSlices[cIndex,n] = slice(-structRatio[n],None)
+                else:
+                    self.recvCSlices[cIndex,n] = slice(None,structRatio[n])
 
 class Domain(object):
     def __init__(self,nodes,domainSize,subDomains,periodic):
@@ -156,6 +220,7 @@ class subDomain(object):
         self.ownNodesTotal= 0
         self.poreNodes    = 0
         self.subDomainSize = np.zeros([3,1])
+        self.grid = None
 
     def getInfo(self):
         n = 0
