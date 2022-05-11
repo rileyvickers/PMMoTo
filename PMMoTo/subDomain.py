@@ -12,6 +12,7 @@ comm = MPI.COMM_WORLD
 
 class Orientation(object):
     def __init__(self):
+        
         self.numFaces = 6
         self.numEdges = 12
         self.numCorners = 8

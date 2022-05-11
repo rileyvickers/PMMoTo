@@ -7,9 +7,10 @@ from . import distance
 from . import morphology
 import communication
 comm = MPI.COMM_WORLD
+import sys
 
 """ TO DO:
-           Periodic
+           Periodic - Issue when self.subDomain.Id = neigh
            Phases
            Clean Up and Optimize
            Cython
@@ -102,6 +103,7 @@ class Drainage(object):
         self.gamma       = gamma
         self.inletDirection = 0
         self.probeD = 0
+        self.probeR = 0
         self.ind = None
         self.nwp = None
         self.globalIndexStart = 0
@@ -112,8 +114,10 @@ class Drainage(object):
     def getDiameter(self,pc):
         if pc == 0:
             self.probeD = 0
+            self.probeR = 0
         else:
-            self.probeD = 4*self.gamma/pc
+            self.probeR = 2.*self.gamma/pc
+            self.probeD = 2.*self.probeR
 
     def probeDistance(self):
         self.ind = np.where(self.edt.EDT > self.probeD,1,0)  #IS THAT RIGHT Diameter vs RADIUS???
@@ -384,8 +388,7 @@ class Drainage(object):
                     testSetKey = testSetKey + 1
 
                 if not matchedOut:
-                    if self.subDomain.ID == 0 or self.subDomain.ID == 4:
-                        print("Set Not Matched! Hmmm",self.subDomain.ID,nbProc,ownSet,ownNodes)
+                    print("Set Not Matched! Hmmm",self.subDomain.ID,nbProc,ownSet,ownNodes)
 
     def organizeSets(self,size,drainData):
         if self.subDomain.ID == 0:
@@ -493,7 +496,6 @@ class Drainage(object):
         self.nwpFinal= np.where( (nwpDist ==  1) & (self.subDomain.grid == 1),1,0)
 
     def drainCOMM(self):
-
         self.dataRecvFace,self.dataRecvEdge,self.dataRecvCorner = communication.subDomainComm(self.Orientation,self.subDomain,self.boundaryData[self.subDomain.ID]['NeighborProcID'])
 
     def drainCOMMUnpack(self):
@@ -543,9 +545,9 @@ def calcDrainage(rank,size,domain,subDomain,inlet,EDT):
     drainData = [drain.matchedSets,drain.setCount,drain.boundSetCount]
     drainData = comm.gather(drainData, root=0)
     drain.organizeSets(size,drainData)
+
     drain.updateSetID()
     drain.getNWP()
-    morphL = morphology.morph(rank,domain,subDomain,drain.nwp,drain.probeD/2.)
+    morphL = morphology.morph(rank,domain,subDomain,drain.nwp,drain.probeR)
     drain.finalizeNWP(morphL.gridOut)
-    print(drain.probeD,domain.dX,domain.dY,domain.dZ)
     return drain

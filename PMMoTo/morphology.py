@@ -105,7 +105,6 @@ class Morphology(object):
 
     def morphAdd(self):
         gridOut = ndimage.binary_dilation(self.haloGrid,structure=self.structElem)
-        print(self.structElem.shape)
         dim = gridOut.shape
         self.gridOut = gridOut[self.halo[1]:dim[0]-self.halo[0],
                                self.halo[3]:dim[1]-self.halo[2],

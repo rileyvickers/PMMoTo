@@ -3,14 +3,12 @@ from mpi4py import MPI
 from scipy import ndimage
 import scipy.ndimage as ndi
 from scipy.ndimage.morphology import distance_transform_edt
-
 from MAtools import printMedialAxis
 from scipy.spatial import KDTree
 import pdb
 import edt
 import sys
 import time
-
 import PMMoTo
 
 
@@ -22,8 +20,8 @@ if rank==0:
     start_time = time.time()
 
 subDomains = [2,2,2]
-nodes = [51,51,51]
-periodic = [False,False,False]
+nodes = [151,151,151]
+periodic = [True,False,False]
 inlet  = [0,0,-1]
 outlet = [0,0, 1]
 domainFile = open('testDomains/pack_sub.out', 'r')
@@ -158,41 +156,64 @@ if rank==0:
         print("L2 EDT Error Norm",np.linalg.norm(diffEDT) )
 
 
-
-        for nn in range(0,numSubDomains):
-            printGridOut = np.zeros([sD[nn].grid.size,7])
-            c = 0
-            for i in range(0,sD[nn].grid.shape[0]):
-                for j in range(0,sD[nn].grid.shape[1]):
-                    for k in range(0,sD[nn].grid.shape[2]):
-                        printGridOut[c,0] = sD[nn].x[i]#sDAll[nn].indexStart[0] + i #sDAll[nn].x[i]
-                        printGridOut[c,1] = sD[nn].y[j]#sDAll[nn].indexStart[1] + j#sDAll[nn].y[j]
-                        printGridOut[c,2] = sD[nn].z[k]#sDAll[nn].indexStart[2] + k#sDAll[nn].z[k]
-                        printGridOut[c,3] = sDdrain[nn].nwpFinal[i,j,k]
-                        printGridOut[c,4] = sD[nn].grid[i,j,k]
-                        printGridOut[c,5] = sDEDT[nn].EDT[i,j,k]
-                        printGridOut[c,6] = sDdrain[nn].nwp[i,j,k]
-                        c = c + 1
-
-            header = "x,y,z,NWPFinal,Grid,EDT,NWP"
-            file = "dataDump/3dsubGridIndicator_"+str(nn)+".csv"
-            np.savetxt(file,printGridOut, delimiter=',',header=header)
-
-        # printGridOut = np.zeros([grid.size,5])
-        # c = 0
-        # for i in range(0,grid.shape[0]):
-        #     for j in range(0,grid.shape[1]):
-        #         for k in range(0,grid.shape[2]):
-        #             printGridOut[c,0] = i
-        #             printGridOut[c,1] = j
-        #             printGridOut[c,2] = k
-        #             printGridOut[c,3] = gridOut[i,j,k]
-        #             printGridOut[c,4] = checkEDT[i,j,k]
-        #             c = c + 1
         #
-        # header = "x,y,z,Grid,EDT"
-        # file = "dataDump/3dGrid.csv"
-        # np.savetxt(file,printGridOut, delimiter=',',header=header)
+        # for nn in range(0,numSubDomains):
+        #     printGridOut = np.zeros([sD[nn].grid.size,7])
+        #     c = 0
+        #     for i in range(0,sD[nn].grid.shape[0]):
+        #         for j in range(0,sD[nn].grid.shape[1]):
+        #             for k in range(0,sD[nn].grid.shape[2]):
+        #                 printGridOut[c,0] = sD[nn].x[i]#sDAll[nn].indexStart[0] + i #sDAll[nn].x[i]
+        #                 printGridOut[c,1] = sD[nn].y[j]#sDAll[nn].indexStart[1] + j#sDAll[nn].y[j]
+        #                 printGridOut[c,2] = sD[nn].z[k]#sDAll[nn].indexStart[2] + k#sDAll[nn].z[k]
+        #                 printGridOut[c,3] = sDdrain[nn].nwpFinal[i,j,k]
+        #                 printGridOut[c,4] = sD[nn].grid[i,j,k]
+        #                 printGridOut[c,5] = sDEDT[nn].EDT[i,j,k]
+        #                 printGridOut[c,6] = sDdrain[nn].nwp[i,j,k]
+        #                 c = c + 1
+        #
+        #     header = "x,y,z,NWPFinal,Grid,EDT,NWP"
+        #     file = "dataDump/3dsubGridIndicator_"+str(nn)+".csv"
+        #     np.savetxt(file,printGridOut, delimiter=',',header=header)
+
+        #
+        # for nn in range(0,numSubDomains):
+        #     numSets = sDdrain[nn].setCount
+        #     totalNodes = 0
+        #     for n in range(0,numSets):
+        #         totalNodes = totalNodes + len(sDdrain[nn].Sets[n].nodes)
+        #     printSetOut = np.zeros([totalNodes,7])
+        #     c = 0
+        #     for setID in range(0,numSets):
+        #         for n in range(0,len(sDdrain[nn].Sets[setID].nodes)):
+        #             printSetOut[c,0] = sDdrain[nn].Sets[setID].nodes[n].globalIndex[0]
+        #             printSetOut[c,1] = sDdrain[nn].Sets[setID].nodes[n].globalIndex[1]
+        #             printSetOut[c,2] = sDdrain[nn].Sets[setID].nodes[n].globalIndex[2]
+        #             printSetOut[c,3] = sDdrain[nn].Sets[setID].globalID
+        #             printSetOut[c,4] = nn
+        #             printSetOut[c,5] = sDdrain[nn].Sets[setID].inlet
+        #             printSetOut[c,6] = setID
+        #             c = c + 1
+        #         #print(nn,allDrainage[nn].Sets[setID].globalID)
+        #     file = "dataDump/3dsubGridSetNodes_"+str(nn)+".csv"
+        #     header = "x,y,z,globalID,procID,Inlet,SetID"
+        #     np.savetxt(file,printSetOut, delimiter=',',header=header)
+
+        printGridOut = np.zeros([grid.size,5])
+        c = 0
+        for i in range(0,grid.shape[0]):
+            for j in range(0,grid.shape[1]):
+                for k in range(0,grid.shape[2]):
+                    printGridOut[c,0] = x[i]
+                    printGridOut[c,1] = y[j]
+                    printGridOut[c,2] = z[k]
+                    printGridOut[c,3] = gridOut[i,j,k]
+                    printGridOut[c,4] = diffEDT[i,j,k]
+                    c = c + 1
+
+        header = "x,y,z,Grid,EDT"
+        file = "dataDump/3dGrid.csv"
+        np.savetxt(file,printGridOut, delimiter=',',header=header)
     #
     # for nn in range(0,numSubDomains):
     #     printGridOut = np.zeros([sD[nn].grid.size,5])
@@ -213,23 +234,23 @@ if rank==0:
     #     np.savetxt(file,printGridOut, delimiter=',',header=header)
     #
     #
-    # nn = 0
-    # c = 0
-    # data = np.empty((0,3))
-    # orient = Orientation()
-    # for fIndex in orient.faces:
-    #     orientID = orient.faces[fIndex]['ID']
-    #     for procs in sDEDT[nn].solidsAll.keys():
-    #         for fID in sDEDT[nn].solidsAll[procs]['orientID'].keys():
-    #             if fID == orientID:
-    #                 data = np.append(data,sDEDT[nn].solidsAll[procs]['orientID'][fID],axis=0)
-    # printGridOut = np.zeros([data.shape[0],5])
-    # for i in range(data.shape[0]):
-    #     printGridOut[c,0] = data[i][0]
-    #     printGridOut[c,1] = data[i][1]
-    #     printGridOut[c,2] = data[i][2]
-    #     c = c + 1
-    #
-    # header = "x,y,z"
-    # file = "dataDump/3dsubGridAllSolids_"+str(nn)+".csv"
-    # np.savetxt(file,printGridOut, delimiter=',',header=header)
+    nn = 0
+    c = 0
+    data = np.empty((0,3))
+    orient = sDL.Orientation
+    for fIndex in orient.faces:
+        orientID = orient.faces[fIndex]['ID']
+        for procs in sDEDT[nn].solidsAll.keys():
+            for fID in sDEDT[nn].solidsAll[procs]['orientID'].keys():
+                if fID == orientID:
+                    data = np.append(data,sDEDT[nn].solidsAll[procs]['orientID'][fID],axis=0)
+    printGridOut = np.zeros([data.shape[0],5])
+    for i in range(data.shape[0]):
+        printGridOut[c,0] = data[i][0]
+        printGridOut[c,1] = data[i][1]
+        printGridOut[c,2] = data[i][2]
+        c = c + 1
+
+    header = "x,y,z"
+    file = "dataDump/3dsubGridAllSolids_"+str(nn)+".csv"
+    np.savetxt(file,printGridOut, delimiter=',',header=header)

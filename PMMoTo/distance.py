@@ -401,32 +401,35 @@ class EDT(object):
 
         self.sendData = {self.subDomain.ID: {'NeighborProcID':{}}}
 
+
+### ISSUe when NEighbor is for 2 Faces!
+
         for fIndex in self.Orientation.faces:
             neigh = self.subDomain.neighborF[fIndex]
             oppIndex = self.Orientation.faces[fIndex]['oppIndex']
             oppNeigh = self.subDomain.neighborF[oppIndex]
             if oppNeigh > -1 and oppNeigh not in self.sendData[self.subDomain.ID]['NeighborProcID'].keys():
-                self.sendData[self.subDomain.ID]['NeighborProcID'][oppNeigh] = []
+                self.sendData[self.subDomain.ID]['NeighborProcID'][oppNeigh] = {'ID':{}}
             if (oppNeigh > -1 and neigh != self.subDomain.ID and oppNeigh in self.sendData[self.subDomain.ID]['NeighborProcID'].keys()):
-                self.sendData[self.subDomain.ID]['NeighborProcID'][oppNeigh] = self.trimmedSolids[oppIndex]
+                self.sendData[self.subDomain.ID]['NeighborProcID'][oppNeigh]['ID'][fIndex] = self.trimmedSolids[oppIndex]
 
         for eIndex in self.Orientation.edges:
             neigh = self.subDomain.neighborE[eIndex]
             oppIndex = self.Orientation.edges[eIndex]['oppIndex']
             oppNeigh = self.subDomain.neighborE[oppIndex]
             if oppNeigh > -1 and oppNeigh not in self.sendData[self.subDomain.ID]['NeighborProcID'].keys():
-                self.sendData[self.subDomain.ID]['NeighborProcID'][oppNeigh] = []
+                self.sendData[self.subDomain.ID]['NeighborProcID'][oppNeigh] = {'ID':{}}
             if (oppNeigh > -1 and neigh != self.subDomain.ID and oppNeigh in self.sendData[self.subDomain.ID]['NeighborProcID'].keys()):
-                self.sendData[self.subDomain.ID]['NeighborProcID'][oppNeigh] = self.edgeSolids[oppIndex]
+                self.sendData[self.subDomain.ID]['NeighborProcID'][oppNeigh]['ID'][eIndex] = self.edgeSolids[oppIndex]
 
         for cIndex in self.Orientation.corners:
             neigh = self.subDomain.neighborC[cIndex]
             oppIndex = self.Orientation.corners[cIndex]['oppIndex']
             oppNeigh = self.subDomain.neighborC[oppIndex]
             if oppNeigh > -1 and oppNeigh not in self.sendData[self.subDomain.ID]['NeighborProcID'].keys():
-                self.sendData[self.subDomain.ID]['NeighborProcID'][oppNeigh] = []
+                self.sendData[self.subDomain.ID]['NeighborProcID'][oppNeigh] = {'ID':{}}
             if (oppNeigh > -1 and neigh != self.subDomain.ID and oppNeigh in self.sendData[self.subDomain.ID]['NeighborProcID'].keys()):
-                self.sendData[self.subDomain.ID]['NeighborProcID'][oppNeigh] = self.cornerSolids[oppIndex]
+                self.sendData[self.subDomain.ID]['NeighborProcID'][oppNeigh]['ID'][cIndex] = self.cornerSolids[oppIndex]
 
     def EDTComm(self):
 
@@ -442,7 +445,7 @@ class EDT(object):
             perCorrection = perFace*self.Domain.domainLength
 
             if (neigh > -1 and neigh != self.ID):
-                self.solidsAll[neigh]['orientID'][orientID] = self.dataRecvFace[fIndex]
+                self.solidsAll[neigh]['orientID'][orientID] = self.dataRecvFace[fIndex]['ID'][fIndex]
                 if (perFace.any() != 0):
                     self.solidsAll[neigh]['orientID'][orientID] = self.solidsAll[neigh]['orientID'][orientID]-perCorrection
             elif (neigh == self.ID):
@@ -459,16 +462,17 @@ class EDT(object):
                 faceIndex = self.Orientation.edges[eIndex]['faceIndex']
                 for fIndex in faceIndex:
                     orientID = self.Orientation.faces[fIndex]['ID']
+                    data = self.dataRecvEdge[eIndex]['ID'][eIndex]
                     if orientID in self.solidsAll[neigh]['orientID']:
                         if (perEdge.any() != 0):
-                            self.solidsAll[neigh]['orientID'][orientID] = np.append(self.solidsAll[neigh]['orientID'][orientID],self.dataRecvEdge[eIndex] - perCorrection,axis=0)
+                            self.solidsAll[neigh]['orientID'][orientID] = np.append(self.solidsAll[neigh]['orientID'][orientID],data - perCorrection,axis=0)
                         else:
-                            self.solidsAll[neigh]['orientID'][orientID] = np.append(self.solidsAll[neigh]['orientID'][orientID],self.dataRecvEdge[eIndex],axis=0)
+                            self.solidsAll[neigh]['orientID'][orientID] = np.append(self.solidsAll[neigh]['orientID'][orientID],data,axis=0)
                     else:
                         if (perEdge.any() != 0):
-                            self.solidsAll[neigh]['orientID'][orientID] = self.dataRecvEdge[eIndex] - perCorrection
+                            self.solidsAll[neigh]['orientID'][orientID] = data - perCorrection
                         else:
-                            self.solidsAll[neigh]['orientID'][orientID] = self.dataRecvEdge[eIndex]
+                            self.solidsAll[neigh]['orientID'][orientID] = data
 
             elif(neigh == self.ID):
                 faceIndex = self.Orientation.edges[eIndex]['faceIndex']
@@ -486,17 +490,17 @@ class EDT(object):
             perCorner = self.subDomain.neighborPerC[cIndex]
             perCorrection = perCorner*self.Domain.domainLength*self.Domain.periodic
             if (neigh > -1 and neigh != self.ID):
-                data = self.dataRecvCorner[cIndex]
                 faceIndex = self.Orientation.corners[cIndex]['faceIndex']
                 for fIndex in faceIndex:
                     orientID = self.Orientation.faces[fIndex]['ID']
+                    data = self.dataRecvCorner[cIndex]['ID'][cIndex]
                     if orientID in self.solidsAll[neigh]['orientID']:
                         if (perCorner.any() != 0):
-                            self.solidsAll[neigh]['orientID'][orientID] =np.append(self.solidsAll[neigh]['orientID'][orientID],self.dataRecvCorner[cIndex]-perCorrection,axis=0)
+                            self.solidsAll[neigh]['orientID'][orientID] =np.append(self.solidsAll[neigh]['orientID'][orientID],data-perCorrection,axis=0)
                         else:
-                            self.solidsAll[neigh]['orientID'][orientID] =np.append(self.solidsAll[neigh]['orientID'][orientID],self.dataRecvCorner[cIndex],axis=0)
+                            self.solidsAll[neigh]['orientID'][orientID] =np.append(self.solidsAll[neigh]['orientID'][orientID],data,axis=0)
                     else:
-                        self.solidsAll[neigh]['orientID'][orientID] = self.dataRecvCorner[cIndex]
+                        self.solidsAll[neigh]['orientID'][orientID] = data
                         if (perCorner.any() != 0):
                             self.solidsAll[neigh]['orientID'][orientID] = self.solidsAll[neigh]['orientID'][orientID]-perCorrection
             elif neigh == self.ID:
