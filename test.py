@@ -22,7 +22,7 @@ if rank==0:
     start_time = time.time()
 
 subDomains = [2,2,2]
-nodes = [151,151,151]
+nodes = [51,51,51]
 periodic = [False,False,False]
 inlet  = [0,0,-1]
 outlet = [0,0, 1]

@@ -5,6 +5,7 @@ import edt
 import pdb
 from . import distance
 from . import morphology
+import communication
 comm = MPI.COMM_WORLD
 
 """ TO DO:
@@ -493,21 +494,10 @@ class Drainage(object):
 
     def drainCOMM(self):
 
-        #### Faces ####
-        reqs = [None]*self.Orientation.numFaces
-        reqr = [None]*self.Orientation.numFaces
-        for fIndex in self.Orientation.faces:
-            neigh = self.subDomain.neighborF[fIndex]
-            oppIndex = self.Orientation.faces[fIndex]['oppIndex']
-            oppNeigh = self.subDomain.neighborF[oppIndex]
-            if (oppNeigh > -1 and neigh != self.subDomain.ID and oppNeigh in self.boundaryData[self.subDomain.ID]['NeighborProcID'].keys()):
-                reqs[fIndex] = comm.isend(self.boundaryData[self.subDomain.ID]['NeighborProcID'][oppNeigh],dest=oppNeigh)
-            if (neigh > -1 and neigh != self.subDomain.ID):
-                if neigh in self.boundaryData[self.subDomain.ID]['NeighborProcID'].keys():
-                    reqr[fIndex] = comm.irecv(bytearray(1<<20),source=neigh)
+        self.dataRecvFace,self.dataRecvEdge,self.dataRecvCorner = communication.subDomainComm(self.Orientation,self.subDomain,self.boundaryData[self.subDomain.ID]['NeighborProcID'])
 
-        reqs = [i for i in reqs if i]
-        MPI.Request.waitall(reqs)
+    def drainCOMMUnpack(self):
+        #### Faces ####
 
         for fIndex in self.Orientation.faces:
             neigh = self.subDomain.neighborF[fIndex]
@@ -515,56 +505,26 @@ class Drainage(object):
                 if neigh in self.boundaryData[self.subDomain.ID]['NeighborProcID'].keys():
                     if neigh not in self.boundaryData:
                         self.boundaryData[neigh] = {'NeighborProcID':{}}
-                    self.boundaryData[neigh]['NeighborProcID'][neigh] = reqr[fIndex].wait()
+                    self.boundaryData[neigh]['NeighborProcID'][neigh] = self.dataRecvFace[fIndex]
 
         #### Edges ####
-        reqs = [None]*self.Orientation.numEdges
-        reqr = [None]*self.Orientation.numEdges
-        for eIndex in self.Orientation.edges:
-            neigh = self.subDomain.neighborE[eIndex]
-            oppIndex = self.Orientation.edges[eIndex]['oppIndex']
-            oppNeigh = self.subDomain.neighborE[oppIndex]
-            if (oppNeigh > -1 and neigh != self.subDomain.ID and oppNeigh in self.boundaryData[self.subDomain.ID]['NeighborProcID'].keys()):
-                reqs[eIndex] = comm.isend(self.boundaryData[self.subDomain.ID]['NeighborProcID'][oppNeigh],dest=oppNeigh)
-            if (neigh > -1 and neigh != self.subDomain.ID):
-                if neigh in self.boundaryData[self.subDomain.ID]['NeighborProcID'].keys():
-                    reqr[eIndex] = comm.irecv(bytearray(1<<20),source=neigh)
-
-        reqs = [i for i in reqs if i]
-        MPI.Request.waitall(reqs)
-
         for eIndex in self.Orientation.edges:
             neigh = self.subDomain.neighborE[eIndex]
             if (neigh > -1 and neigh != self.subDomain.ID):
                 if neigh in self.boundaryData[self.subDomain.ID]['NeighborProcID'].keys():
                     if neigh not in self.boundaryData:
                         self.boundaryData[neigh] = {'NeighborProcID':{}}
-                    self.boundaryData[neigh]['NeighborProcID'][neigh] = reqr[eIndex].wait()
+                    self.boundaryData[neigh]['NeighborProcID'][neigh] = self.dataRecvEdge[eIndex]
 
 
         #### Corners ####
-        reqs = [None]*self.Orientation.numCorners
-        reqr = [None]*self.Orientation.numCorners
-        for cIndex in self.Orientation.corners:
-            neigh = self.subDomain.neighborC[cIndex]
-            oppIndex = self.Orientation.corners[cIndex]['oppIndex']
-            oppNeigh = self.subDomain.neighborC[oppIndex]
-            if (oppNeigh > -1 and neigh != self.subDomain.ID and oppNeigh in self.boundaryData[self.subDomain.ID]['NeighborProcID'].keys()):
-                reqs[cIndex] = comm.isend(self.boundaryData[self.subDomain.ID]['NeighborProcID'][oppNeigh],dest=oppNeigh)
-            if (neigh > -1 and neigh != self.subDomain.ID):
-                if neigh in self.boundaryData[self.subDomain.ID]['NeighborProcID'].keys():
-                    reqr[cIndex] = comm.irecv(bytearray(1<<20),source=neigh)
-
-        reqs = [i for i in reqs if i]
-        MPI.Request.waitall(reqs)
-
         for cIndex in self.Orientation.corners:
             neigh = self.subDomain.neighborC[cIndex]
             if (neigh > -1 and neigh != self.subDomain.ID):
                 if neigh in self.boundaryData[self.subDomain.ID]['NeighborProcID'].keys():
                     if neigh not in self.boundaryData:
                         self.boundaryData[neigh] = {'NeighborProcID':{}}
-                    self.boundaryData[neigh]['NeighborProcID'][neigh] = reqr[cIndex].wait()
+                    self.boundaryData[neigh]['NeighborProcID'][neigh] = self.dataRecvCorner[cIndex]
 
 
 
@@ -578,6 +538,7 @@ def calcDrainage(rank,size,domain,subDomain,inlet,EDT):
     drain.getConnectedSets()
     drain.getBoundarySets()
     drain.drainCOMM()
+    drain.drainCOMMUnpack()
     drain.correctBoundarySets()
     drainData = [drain.matchedSets,drain.setCount,drain.boundSetCount]
     drainData = comm.gather(drainData, root=0)

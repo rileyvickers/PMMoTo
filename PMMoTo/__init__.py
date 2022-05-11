@@ -3,6 +3,7 @@ from .distance import calcEDT
 from .dataRead import readPorousMediaXYZR
 from .drainage import calcDrainage
 from .morphology import morph
+import communication
 from MAtools import domainGen
 from mpi4py import MPI
 import numpy as np

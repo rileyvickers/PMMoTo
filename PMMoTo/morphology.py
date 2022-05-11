@@ -3,7 +3,7 @@ from mpi4py import MPI
 import math
 from scipy import ndimage
 comm = MPI.COMM_WORLD
-
+import communication
 
 class Morphology(object):
     def __init__(self,Domain,subDomain,grid,radius):
@@ -31,7 +31,7 @@ class Morphology(object):
 
         self.structElem = np.array(s <= self.radius * self.radius)
 
-    def genHalo(self):
+    def haloCommPack(self):
 
         self.halo = np.zeros([6],dtype=np.int64)
         self.haloData = {self.subDomain.ID: {'NeighborProcID':{}}}
@@ -61,25 +61,13 @@ class Morphology(object):
 
     def haloComm(self):
 
+        self.dataRecvFace,self.dataRecvEdge,self.dataRecvCorner = communication.subDomainComm(self.Orientation,self.subDomain,self.haloData[self.subDomain.ID]['NeighborProcID'])
+
+    def haloCommUnpack(self):
         self.Orientation.getRecieveSlices(self.structRatio,self.halo,self.haloGrid)
-        self.slices = self.Orientation.recvFSlices
 
         #### Faces ####
-        reqs = [None]*self.Orientation.numFaces
-        reqr = [None]*self.Orientation.numFaces
-        for fIndex in self.Orientation.faces:
-            neigh = self.subDomain.neighborF[fIndex]
-            oppIndex = self.Orientation.faces[fIndex]['oppIndex']
-            oppNeigh = self.subDomain.neighborF[oppIndex]
-            if (oppNeigh > -1 and neigh != self.subDomain.ID and oppNeigh in self.haloData[self.subDomain.ID]['NeighborProcID'].keys()):
-                reqs[fIndex] = comm.isend(self.haloData[self.subDomain.ID]['NeighborProcID'][oppNeigh],dest=oppNeigh)
-            if (neigh > -1 and neigh != self.subDomain.ID):
-                if neigh in self.haloData[self.subDomain.ID]['NeighborProcID'].keys():
-                    reqr[fIndex] = comm.irecv(bytearray(1<<20),source=neigh)
-
-        reqs = [i for i in reqs if i]
-        MPI.Request.waitall(reqs)
-
+        self.slices = self.Orientation.recvFSlices
         for fIndex in self.Orientation.faces:
             neigh = self.subDomain.neighborF[fIndex]
             oppIndex = self.Orientation.faces[fIndex]['oppIndex']
@@ -87,28 +75,11 @@ class Morphology(object):
                 if neigh in self.haloData[self.subDomain.ID]['NeighborProcID'].keys():
                     if neigh not in self.haloData:
                         self.haloData[neigh] = {'NeighborProcID':{}}
-                    self.haloData[neigh]['NeighborProcID'][neigh] = reqr[fIndex].wait()
+                    self.haloData[neigh]['NeighborProcID'][neigh] = self.dataRecvFace[fIndex]
                     self.haloGrid[self.slices[fIndex,0],self.slices[fIndex,1],self.slices[fIndex,2]] = self.haloData[neigh]['NeighborProcID'][neigh]
 
         #### Edges ####
-
         self.slices = self.Orientation.recvESlices
-
-        reqs = [None]*self.Orientation.numEdges
-        reqr = [None]*self.Orientation.numEdges
-        for eIndex in self.Orientation.edges:
-            neigh = self.subDomain.neighborE[eIndex]
-            oppIndex = self.Orientation.edges[eIndex]['oppIndex']
-            oppNeigh = self.subDomain.neighborE[oppIndex]
-            if (oppNeigh > -1 and neigh != self.subDomain.ID and oppNeigh in self.haloData[self.subDomain.ID]['NeighborProcID'].keys()):
-                reqs[eIndex] = comm.isend(self.haloData[self.subDomain.ID]['NeighborProcID'][oppNeigh],dest=oppNeigh)
-            if (neigh > -1 and neigh != self.subDomain.ID):
-                if neigh in self.haloData[self.subDomain.ID]['NeighborProcID'].keys():
-                    reqr[eIndex] = comm.irecv(bytearray(1<<20),source=neigh)
-
-        reqs = [i for i in reqs if i]
-        MPI.Request.waitall(reqs)
-
         for eIndex in self.Orientation.edges:
             neigh = self.subDomain.neighborE[eIndex]
             oppIndex = self.Orientation.edges[eIndex]['oppIndex']
@@ -116,28 +87,12 @@ class Morphology(object):
                 if neigh in self.haloData[self.subDomain.ID]['NeighborProcID'].keys():
                     if neigh not in self.haloData:
                         self.haloData[neigh] = {'NeighborProcID':{}}
-                    self.haloData[neigh]['NeighborProcID'][neigh] = reqr[eIndex].wait()
+                    self.haloData[neigh]['NeighborProcID'][neigh] = self.dataRecvEdge[eIndex]
                     self.haloGrid[self.slices[eIndex,0],self.slices[eIndex,1],self.slices[eIndex,2]] = self.haloData[neigh]['NeighborProcID'][neigh]
 
         #### Corners ####
 
         self.slices = self.Orientation.recvCSlices
-
-        reqs = [None]*self.Orientation.numCorners
-        reqr = [None]*self.Orientation.numCorners
-        for cIndex in self.Orientation.corners:
-            neigh = self.subDomain.neighborC[cIndex]
-            oppIndex = self.Orientation.corners[cIndex]['oppIndex']
-            oppNeigh = self.subDomain.neighborC[oppIndex]
-            if (oppNeigh > -1 and neigh != self.subDomain.ID and oppNeigh in self.haloData[self.subDomain.ID]['NeighborProcID'].keys()):
-                reqs[cIndex] = comm.isend(self.haloData[self.subDomain.ID]['NeighborProcID'][oppNeigh],dest=oppNeigh)
-            if (neigh > -1 and neigh != self.subDomain.ID):
-                if neigh in self.haloData[self.subDomain.ID]['NeighborProcID'].keys():
-                    reqr[cIndex] = comm.irecv(bytearray(1<<20),source=neigh)
-
-        reqs = [i for i in reqs if i]
-        MPI.Request.waitall(reqs)
-
         for cIndex in self.Orientation.corners:
             neigh = self.subDomain.neighborC[cIndex]
             oppIndex = self.Orientation.corners[cIndex]['oppIndex']
@@ -145,7 +100,7 @@ class Morphology(object):
                 if neigh in self.haloData[self.subDomain.ID]['NeighborProcID'].keys():
                     if neigh not in self.haloData:
                         self.haloData[neigh] = {'NeighborProcID':{}}
-                    self.haloData[neigh]['NeighborProcID'][neigh] = reqr[cIndex].wait()
+                    self.haloData[neigh]['NeighborProcID'][neigh] = self.dataRecvCorner[cIndex]
                     self.haloGrid[self.slices[cIndex,0],self.slices[cIndex,1],self.slices[cIndex,2]] = self.haloData[neigh]['NeighborProcID'][neigh]
 
     def morphAdd(self):
@@ -161,7 +116,8 @@ class Morphology(object):
 def morph(rank,Domain,subDomain,grid,radius):
     sDMorph = Morphology(Domain = Domain,subDomain = subDomain, grid = grid, radius = radius)
     sDMorph.genStructElem()
-    sDMorph.genHalo()
+    sDMorph.haloCommPack()
     sDMorph.haloComm()
+    sDMorph.haloCommUnpack()
     sDMorph.morphAdd()
     return sDMorph
