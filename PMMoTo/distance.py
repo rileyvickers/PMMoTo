@@ -532,7 +532,7 @@ def calcEDT(rank,domain,subDomain,grid):
     sDEDT.EDTCommUnpack()
     sDEDT.fixInterface()
 
-    EDTStats = False
+    EDTStats = True
     if EDTStats:
         sDEDT.genStats()
         EDTData = [sDEDT.ID,sDEDT.distVals,sDEDT.distCounts]
@@ -553,6 +553,6 @@ def calcEDT(rank,domain,subDomain,grid):
                     counts[ind] = counts[ind] + d[2][n]
 
             stats = np.stack((bins,counts), axis = 1)
-            print(stats)
+            print("Minimum distance:",bins[1],"Maximum distance:",bins[-1])
 
     return sDEDT

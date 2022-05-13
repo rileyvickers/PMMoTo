@@ -110,6 +110,8 @@ class Drainage(object):
         self.globalBoundarySetID = None
         self.inlet = inlet
         self.matchedSets = []
+        self.nwpNodes = 0
+        self.totalnwpNodes = np.zeros(1,dtype=np.uint64)
 
     def getDiameter(self,pc):
         if pc == 0:
@@ -120,7 +122,8 @@ class Drainage(object):
             self.probeD = 2.*self.probeR
 
     def probeDistance(self):
-        self.ind = np.where(self.edt.EDT > self.probeD,1,0)  #IS THAT RIGHT Diameter vs RADIUS???
+        self.ind = np.where(self.edt.EDT >= self.probeR,1,0)
+        self.numNWP = np.sum(self.ind)
 
     def getNodeInfo(self):
         self.numNodes = np.sum(self.ind)
@@ -493,7 +496,12 @@ class Drainage(object):
             self.nwp[n[0],n[1],n[2]] = 1
 
     def finalizeNWP(self,nwpDist):
-        self.nwpFinal= np.where( (nwpDist ==  1) & (self.subDomain.grid == 1),1,0)
+        self.nwpFinal = np.where( (nwpDist ==  1) & (self.subDomain.grid == 1),1,0)
+        own = self.subDomain.ownNodes
+        ownGrid =  self.nwpFinal[own[0][0]:own[0][1],
+                             own[1][0]:own[1][1],
+                             own[2][0]:own[2][1]]
+        self.nwpNodes = np.sum(ownGrid)
 
     def drainCOMM(self):
         self.dataRecvFace,self.dataRecvEdge,self.dataRecvCorner = communication.subDomainComm(self.Orientation,self.subDomain,self.boundaryData[self.subDomain.ID]['NeighborProcID'])
@@ -534,20 +542,35 @@ def calcDrainage(rank,size,domain,subDomain,inlet,EDT):
 
     #pc = np.linspace(400, 400, 1)
     drain = Drainage(Domain = domain, Orientation = subDomain.Orientation, subDomain = subDomain, edt = EDT, gamma = 1., inlet = inlet)
-    drain.getDiameter(250)
+    drain.getDiameter(6)
     drain.probeDistance()
-    drain.getNodeInfo()
-    drain.getConnectedSets()
-    drain.getBoundarySets()
-    drain.drainCOMM()
-    drain.drainCOMMUnpack()
-    drain.correctBoundarySets()
-    drainData = [drain.matchedSets,drain.setCount,drain.boundSetCount]
-    drainData = comm.gather(drainData, root=0)
-    drain.organizeSets(size,drainData)
+    if rank == 0:
+        print("Probe Diameter:",drain.probeD)
 
-    drain.updateSetID()
-    drain.getNWP()
-    morphL = morphology.morph(rank,domain,subDomain,drain.nwp,drain.probeR)
-    drain.finalizeNWP(morphL.gridOut)
+    numNWPSum = np.zeros(1,dtype=np.uint64)
+    comm.Allreduce( [drain.numNWP, MPI.INT], [numNWPSum, MPI.INT], op = MPI.SUM )
+
+    if numNWPSum < 1:
+        drain.nwp = np.copy(subDomain.grid)
+        drain.nwpFinal = drain.nwp
+    else:
+        drain.getNodeInfo()
+        drain.getConnectedSets()
+        drain.getBoundarySets()
+        drain.drainCOMM()
+        drain.drainCOMMUnpack()
+        drain.correctBoundarySets()
+        drainData = [drain.matchedSets,drain.setCount,drain.boundSetCount]
+        drainData = comm.gather(drainData, root=0)
+        drain.organizeSets(size,drainData)
+        drain.updateSetID()
+        drain.getNWP()
+        morphL = morphology.morph(rank,domain,subDomain,drain.nwp,drain.probeR)
+        drain.finalizeNWP(morphL.gridOut)
+
+        numNWPSum = np.zeros(1,dtype=np.uint64)
+        comm.Allreduce( [drain.nwpNodes, MPI.INT], [drain.totalnwpNodes, MPI.INT], op = MPI.SUM )
+        if rank == 0:
+            print("Wetting phase saturation is: ",1.-drain.totalnwpNodes/subDomain.totalPoreNodes)
+
     return drain

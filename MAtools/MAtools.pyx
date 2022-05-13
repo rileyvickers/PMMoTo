@@ -3,8 +3,10 @@
 #cython: nonecheck=False
 #cython: wraparound=False
 
+import math
 import numpy as np
 cimport numpy as cnp
+from libc.stdio cimport printf
 cnp.import_array()
 
 
@@ -353,6 +355,40 @@ def domainGen( double[:] x, double[:] y, double[:] z, double[:,:] atom):
               c = c + 1
 
     return _grid
+
+
+def domainGenINK(int id,int totalNX, int totalNY, int totalNZ,
+                int lNX, int lNY, int lNZ,
+                int xS, int yS, int zS):
+
+    cdef double zMax = 1.5
+    cdef double xMax = 14.
+
+    cdef int i, j, k, ii, jj, kk
+    cdef double xScale,zScale,iScale,r,arg
+
+    zScale = totalNZ/(zMax * 2.)
+    xScale = xMax/totalNX
+
+    _grid = np.zeros((lNX, lNY, lNZ), dtype=np.uint8)
+    cdef cnp.uint8_t [:,:,:] grid
+
+    grid = _grid
+
+    for i in range(0,lNX):
+      for j in range(0,lNY):
+        for k in range(0,lNZ):
+          ii = i + xS
+          jj = j + yS
+          kk = k + zS
+          iScale = xScale * ii
+          r = (0.01*math.cos(0.01*iScale) + 0.5*math.sin(iScale) + 0.75)*zScale
+          arg = (kk-totalNZ/2.)*(kk-totalNZ/2.) + (jj-totalNY/2.)*(jj-totalNY/2.)
+          if arg <= r*r:
+            grid[i,j,k] = 1
+
+    return _grid
+
 
 
 def printMedialAxis( double[:] x, double[:] y, double[:] z, long[:,:,:] medialAxis, double [:,:,:] distance):

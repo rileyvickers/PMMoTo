@@ -20,7 +20,7 @@ if rank==0:
     start_time = time.time()
 
 subDomains = [2,2,2]
-nodes = [151,151,151]
+nodes = [51,51,51]
 periodic = [True,False,False]
 inlet  = [0,0,-1]
 outlet = [0,0, 1]
@@ -28,7 +28,7 @@ domainFile = open('testDomains/pack_sub.out', 'r')
 
 numSubDomains = np.prod(subDomains)
 
-domain,sDL = PMMoTo.genDomainSubDomain(rank,size,subDomains,nodes,periodic,domainFile,PMMoTo.readPorousMediaXYZR)
+domain,sDL = PMMoTo.genDomainSubDomain(rank,size,subDomains,nodes,periodic,"Sphere",domainFile,PMMoTo.readPorousMediaXYZR)
 sDEDTL = PMMoTo.calcEDT(rank,domain,sDL,sDL.grid)
 drainL = PMMoTo.calcDrainage(rank,size,domain,sDL,inlet,sDEDTL)
 

@@ -1,6 +1,9 @@
 import numpy as np
 from mpi4py import MPI
 from MAtools import domainGen
+from MAtools import domainGenINK
+import sys
+import pdb
 comm = MPI.COMM_WORLD
 
 """ Solid = 0, Pore = 1 """
@@ -12,7 +15,7 @@ comm = MPI.COMM_WORLD
 
 class Orientation(object):
     def __init__(self):
-        
+
         self.numFaces = 6
         self.numEdges = 12
         self.numCorners = 8
@@ -220,6 +223,7 @@ class subDomain(object):
         self.ownNodes     = np.zeros([3,2],dtype = np.int64)
         self.ownNodesTotal= 0
         self.poreNodes    = 0
+        self.totalPoreNodes = np.zeros(1,dtype=np.uint64)
         self.subDomainSize = np.zeros([3,1])
         self.grid = None
 
@@ -289,17 +293,17 @@ class subDomain(object):
 
         c = 0
         for i in range(-self.buffer[0][0], self.nodes[0] + self.buffer[0][1]):
-            self.x[c] = (self.indexStart[0] + i)*self.Domain.dX + self.Domain.dX/2
+            self.x[c] = self.Domain.domainSize[0,0] + (self.indexStart[0] + i)*self.Domain.dX + self.Domain.dX/2
             c = c + 1
 
         c = 0
         for j in range(-self.buffer[1][0], self.nodes[1] + self.buffer[1][1]):
-            self.y[c] = (self.indexStart[1] + j)*self.Domain.dY + self.Domain.dY/2
+            self.y[c] = self.Domain.domainSize[1,0] + (self.indexStart[1] + j)*self.Domain.dY + self.Domain.dY/2
             c = c + 1
 
         c = 0
         for k in range(-self.buffer[2][0], self.nodes[2] + self.buffer[2][1]):
-            self.z[c] = (self.indexStart[2] + k)*self.Domain.dZ + self.Domain.dZ/2
+            self.z[c] = self.Domain.domainSize[2,0] + (self.indexStart[2] + k)*self.Domain.dZ + self.Domain.dZ/2
             c = c + 1
 
         self.ownNodesTotal = self.nodes[0] * self.nodes[1] * self.nodes[2]
@@ -326,8 +330,17 @@ class subDomain(object):
                               self.y[-1] - self.y[0],
                               self.z[-1] - self.z[0]]
 
-    def genDomain(self,sphereData):
+    def genDomainSphereData(self,sphereData):
         self.grid = domainGen(self.x,self.y,self.z,sphereData)
+
+        if (np.sum(self.grid) == np.prod(self.nodes)):
+            print("This code requires at least 1 solid voxel in each subdomain. Please reorder processors!")
+            sys.exit()
+
+    def genDomainInkBottle(self):
+        self.grid = domainGenINK(self.ID,self.Domain.nodes[0],self.Domain.nodes[1],self.Domain.nodes[2],
+                                 self.nodes[0],self.nodes[1],self.nodes[2],
+                                 self.indexStart[0],self.indexStart[1],self.indexStart[2])
 
         if (np.sum(self.grid) == np.prod(self.nodes)):
             print("This code requires at least 1 solid voxel in each subdomain. Please reorder processors!")
@@ -397,14 +410,14 @@ class subDomain(object):
 
         self.lookUpID = lookIDPad
 
-    def loadBalanceStats(self):
+    def getPorosity(self):
         own = self.ownNodes
         ownGrid =  self.grid[own[0][0]:own[0][1],
                              own[1][0]:own[1][1],
                              own[2][0]:own[2][1]]
         self.poreNodes = np.sum(ownGrid)
 
-def genDomainSubDomain(rank,size,subDomains,nodes,periodic,domainFile,dataRead):
+def genDomainSubDomain(rank,size,subDomains,nodes,periodic,dataFormat,domainFile,dataRead):
 
 
     numSubDomains = np.prod(subDomains)
@@ -416,7 +429,11 @@ def genDomainSubDomain(rank,size,subDomains,nodes,periodic,domainFile,dataRead):
     totalNodes = np.prod(nodes)
 
     ### Get Domain INFO for All Procs ###
-    domainSize,sphereData = dataRead(domainFile)
+    if domainFile is not None:
+        domainSize,sphereData = dataRead(domainFile)
+    if domainFile is None:
+        #domainSize = np.array([[0,nodes[0]],[0,nodes[1]],[0,nodes[2]]])
+        domainSize = np.array([[0,14],[-1.5,1.5],[-1.5,1.5]])
     domain = Domain(nodes = nodes, domainSize = domainSize, subDomains = subDomains, periodic = periodic)
     domain.getdXYZ()
     domain.getSubNodes()
@@ -424,27 +441,30 @@ def genDomainSubDomain(rank,size,subDomains,nodes,periodic,domainFile,dataRead):
 
     orient = Orientation()
 
-    sD = subDomain(Domain = domain, ID = rank, subDomains = subDomains, Orientation = orient) ## Switch to PROC ID?
+    sD = subDomain(Domain = domain, ID = rank, subDomains = subDomains, Orientation = orient)
     sD.getInfo()
     sD.getNeighbors()
     sD.getXYZ()
-    sD.genDomain(sphereData)
+    if dataFormat == "Sphere":
+        sD.genDomainSphereData(sphereData)
+    if dataFormat == "InkBotle":
+        sD.genDomainInkBottle()
+
+    sD.getPorosity()
+    comm.Allreduce( [sD.poreNodes, MPI.INT], [sD.totalPoreNodes, MPI.INT], op = MPI.SUM )
 
     loadBalancing = False
     if loadBalancing:
-        sD.loadBalanceStats()
-        loadData = [sD.ID,sD.poreNodes,sD.ownNodesTotal]
+        loadData = [sD.ID,sD.ownNodesTotal]
         loadData = comm.gather(loadData, root=0)
         if rank == 0:
-            sumPoreNodes = 0
             sumTotalNodes = 0
             for ld in loadData:
-                sumPoreNodes = sumPoreNodes + ld[1]
                 sumTotalNodes = sumTotalNodes + ld[2]
-            print("Total Nodes",sumTotalNodes,"Pore Nodes",sumPoreNodes)
+            print("Total Nodes",sumTotalNodes,"Pore Nodes",sD.totalPoreNodes)
             print("Ideal Load Balancing is %2.1f%%" %(1./numSubDomains*100.))
             for ld in loadData:
-                p = ld[1]/sumPoreNodes*100.
+                p = ld[1]/sD.totalPoreNodes*100.
                 t = ld[2]/sumTotalNodes*100.
                 print("Rank: %i has %2.1f%% of the Pore Nodes and %2.1f%% of the total Nodes" %(ld[0],p,t))
 
