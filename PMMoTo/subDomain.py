@@ -338,9 +338,7 @@ class subDomain(object):
             sys.exit()
 
     def genDomainInkBottle(self):
-        self.grid = domainGenINK(self.ID,self.Domain.nodes[0],self.Domain.nodes[1],self.Domain.nodes[2],
-                                 self.nodes[0],self.nodes[1],self.nodes[2],
-                                 self.indexStart[0],self.indexStart[1],self.indexStart[2])
+        self.grid = domainGenINK(self.x,self.y,self.z)
 
         if (np.sum(self.grid) == np.prod(self.nodes)):
             print("This code requires at least 1 solid voxel in each subdomain. Please reorder processors!")
@@ -433,10 +431,11 @@ def genDomainSubDomain(rank,size,subDomains,nodes,periodic,dataFormat,domainFile
         domainSize,sphereData = dataRead(domainFile)
     if domainFile is None:
         #domainSize = np.array([[0,nodes[0]],[0,nodes[1]],[0,nodes[2]]])
-        domainSize = np.array([[0,14],[-1.5,1.5],[-1.5,1.5]])
+        domainSize = np.array([[0.,14.],[-1.5,1.5],[-1.5,1.5]])
     domain = Domain(nodes = nodes, domainSize = domainSize, subDomains = subDomains, periodic = periodic)
     domain.getdXYZ()
     domain.getSubNodes()
+
 
 
     orient = Orientation()

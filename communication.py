@@ -4,7 +4,7 @@ comm = MPI.COMM_WORLD
 
 def subDomainComm(Orientation,subDomain,sendData):
 
-    recvSize = bytearray(1<<20) #### Why cant use as a variable?
+    comm.Barrier()
 
     #### FACE ####
     reqs = [None]*Orientation.numFaces
@@ -17,7 +17,7 @@ def subDomainComm(Orientation,subDomain,sendData):
         if (oppNeigh > -1 and neigh != subDomain.ID and oppNeigh in sendData.keys() ):
             reqs[fIndex] = comm.isend(sendData[oppNeigh],dest=oppNeigh)
         if (neigh > -1 and neigh != subDomain.ID and neigh in sendData.keys() ):
-            reqr[fIndex] = comm.irecv(bytearray(1<<20),source=neigh)
+            reqr[fIndex] = comm.recv(source=neigh)
 
     reqs = [i for i in reqs if i]
     MPI.Request.waitall(reqs)
@@ -26,7 +26,7 @@ def subDomainComm(Orientation,subDomain,sendData):
         orientID = Orientation.faces[fIndex]['ID']
         neigh = subDomain.neighborF[fIndex]
         if (neigh > -1 and neigh != subDomain.ID and neigh in sendData.keys() ):
-            recvDataFace[fIndex] = reqr[fIndex].wait()
+            recvDataFace[fIndex] = reqr[fIndex]#.wait()
 
     #### EDGES ####
     reqs = [None]*Orientation.numEdges
@@ -39,7 +39,7 @@ def subDomainComm(Orientation,subDomain,sendData):
         if (oppNeigh > -1 and neigh != subDomain.ID and oppNeigh in sendData.keys() ):
             reqs[eIndex] = comm.isend(sendData[oppNeigh],dest=oppNeigh)
         if (neigh > -1 and neigh != subDomain.ID and neigh in sendData.keys() ):
-            reqr[eIndex] = comm.irecv(bytearray(1<<20),source=neigh)
+            reqr[eIndex] = comm.recv(source=neigh)
 
     reqs = [i for i in reqs if i]
     MPI.Request.waitall(reqs)
@@ -49,7 +49,7 @@ def subDomainComm(Orientation,subDomain,sendData):
         oppIndex = Orientation.edges[eIndex]['oppIndex']
         oppNeigh = subDomain.neighborE[oppIndex]
         if (neigh > -1 and neigh != subDomain.ID and neigh in sendData.keys() ):
-            recvDataEdge[eIndex] = reqr[eIndex].wait()
+            recvDataEdge[eIndex] = reqr[eIndex]#.wait()
 
     #### CORNERS ####
     reqs = [None]*Orientation.numCorners
@@ -62,7 +62,7 @@ def subDomainComm(Orientation,subDomain,sendData):
         if (oppNeigh > -1 and neigh != subDomain.ID and oppNeigh in sendData.keys() ):
             reqs[cIndex] = comm.isend(sendData[oppNeigh],dest=oppNeigh)
         if (neigh > -1 and neigh != subDomain.ID and neigh in sendData.keys() ):
-            reqr[cIndex] = comm.irecv(bytearray(1<<20),source=neigh)
+            reqr[cIndex] = comm.recv(source=neigh)
 
     reqs = [i for i in reqs if i]
     MPI.Request.waitall(reqs)
@@ -70,6 +70,6 @@ def subDomainComm(Orientation,subDomain,sendData):
     for cIndex in Orientation.corners:
         neigh = subDomain.neighborC[cIndex]
         if (neigh > -1 and neigh != subDomain.ID and neigh in sendData.keys() ):
-            recvDataCorner[cIndex] = reqr[cIndex].wait()
+            recvDataCorner[cIndex] = reqr[cIndex]#.wait()
 
     return recvDataFace,recvDataEdge,recvDataCorner

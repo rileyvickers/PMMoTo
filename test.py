@@ -2,8 +2,8 @@ import numpy as np
 from mpi4py import MPI
 from scipy import ndimage
 import scipy.ndimage as ndi
-from scipy.ndimage.morphology import distance_transform_edt
-from MAtools import printMedialAxis
+from scipy.ndimage import distance_transform_edt
+from MAtools import domainGen
 from scipy.spatial import KDTree
 import pdb
 import edt
@@ -73,7 +73,7 @@ if rank==0:
         xyz = np.meshgrid(x,y,z,indexing='ij')
 
         grid = np.ones([nodes[0],nodes[1],nodes[2]],dtype=np.integer)
-        gridOut = PMMoTo.domainGen(x,y,z,sphereData)
+        gridOut = domainGen(x,y,z,sphereData)
         gridOut = np.asarray(gridOut)
 
         pG = [0,0,0]

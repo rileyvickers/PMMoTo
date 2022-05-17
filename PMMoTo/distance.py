@@ -4,6 +4,7 @@ from scipy.spatial import KDTree
 import edt
 comm = MPI.COMM_WORLD
 import communication
+import time
 
 
 """ Solid = 0, Pore = 1 """
@@ -118,7 +119,7 @@ class EDT(object):
         tree = KDTree(pointsXYZ)
 
         for faceID in self.Orientation.faces:
-            maxNeigh = 8
+            maxNeigh = 15
             order  = [None]*3
             nC  = self.Orientation.faces[faceID]['nC']
             nM  = self.Orientation.faces[faceID]['nM']
@@ -186,17 +187,17 @@ class EDT(object):
             coord2 = coords[arg2]
 
             if self.useIndex:
-                extend = [self.extendFactor*x for x in self.nodes]
+                extend = [self.extendFactor*x for x in self.subDomain.nodes]
                 plusArg = 3
                 if edgeID[arg1] == 1:
-                    dom11 = self.nodes[arg1] - extend[arg1]
-                    dom12 = self.nodes[arg1]
+                    dom11 = self.subDomain.nodes[arg1] - extend[arg1]
+                    dom12 = self.subDomain.nodes[arg1]
                 elif (edgeID[arg1] == -1):
                     dom11 = 0
                     dom12 = extend[arg1]
                 if edgeID[arg2] == 1:
-                    dom21 = self.nodes[arg2] - extend[arg2]
-                    dom22 = self.nodes[arg2]
+                    dom21 = self.subDomain.nodes[arg2] - extend[arg2]
+                    dom22 = self.subDomain.nodes[arg2]
                 elif (edgeID[arg2] == -1):
                     dom21 = 0
                     dom22 = extend[arg2]
@@ -235,23 +236,23 @@ class EDT(object):
             face3 = self.trimmedSolids[self.Orientation.corners[cIndex]['faceIndex'][2]]
             if self.useIndex:
                 plusArg = 3
-                extend = [self.extendFactor*x for x in self.nodes]
+                extend = [self.extendFactor*x for x in self.subDomain.nodes]
 
                 if (cID[0] == 1):
-                    dom11 = self.nodes[0] - extend[0]
-                    dom12 = self.nodes[0]
+                    dom11 = self.subDomain.nodes[0] - extend[0]
+                    dom12 = self.subDomain.nodes[0]
                 elif (cID[0] == -1):
                     dom11 = 0
                     dom12 = extend[0]
                 if (cID[1] == 1):
-                    dom21 = self.nodes[1] - extend[1]
-                    dom22 = self.nodes[1]
+                    dom21 = self.subDomain.nodes[1] - extend[1]
+                    dom22 = self.subDomain.nodes[1]
                 elif (cID[1] == -1):
                     dom21 = 0
                     dom22 = extend[1]
                 if (cID[2] == 1):
-                    dom31 = self.nodes[2] - extend[2]
-                    dom32 = self.nodes[2]
+                    dom31 = self.subDomain.nodes[2] - extend[2]
+                    dom32 = self.subDomain.nodes[2]
                 elif (cID[2] == -1):
                     dom31 = 0
                     dom32 = extend[2]
@@ -324,8 +325,8 @@ class EDT(object):
                     order[nM] = coords[nM][cM]
                     order[nN] = coords[nN][cN]
                     orderL[nC] = l
-                    orderL[nM] = m
-                    orderL[nN] = n
+                    orderL[nM] = cM
+                    orderL[nN] = cN
 
                     maxD = self.EDT[orderL[0],orderL[1],orderL[2]]
                     if (maxD > minD):
@@ -400,9 +401,6 @@ class EDT(object):
         self.initRecieve()
 
         self.sendData = {self.subDomain.ID: {'NeighborProcID':{}}}
-
-
-### ISSUe when NEighbor is for 2 Faces!
 
         for fIndex in self.Orientation.faces:
             neigh = self.subDomain.neighborF[fIndex]
@@ -520,19 +518,20 @@ class EDT(object):
                             own[2][0]:own[2][1]]
         self.distVals,self.distCounts  = np.unique(ownEDT,return_counts=True)
 
-def calcEDT(rank,domain,subDomain,grid):
+def calcEDT(rank,size,domain,subDomain,grid):
 
     #numSubDomains = np.prod(subDomain.Domain.subDomains)
 
     sDEDT = EDT(Domain = domain, ID = rank, subDomain = subDomain, Orientation = subDomain.Orientation, grid = grid)
-    sDEDT.getBoundarySolids()
     sDEDT.genLocalEDT()
-    sDEDT.EDTCommPack()
-    sDEDT.EDTComm()
-    sDEDT.EDTCommUnpack()
-    sDEDT.fixInterface()
+    if size > 1:
+        sDEDT.getBoundarySolids()
+        sDEDT.EDTCommPack()
+        sDEDT.EDTComm()
+        sDEDT.EDTCommUnpack()
+        sDEDT.fixInterface()
 
-    EDTStats = True
+    EDTStats = False
     if EDTStats:
         sDEDT.genStats()
         EDTData = [sDEDT.ID,sDEDT.distVals,sDEDT.distCounts]

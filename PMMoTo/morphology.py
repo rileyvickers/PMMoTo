@@ -4,6 +4,8 @@ import math
 from scipy import ndimage
 comm = MPI.COMM_WORLD
 import communication
+import time
+from scipy.signal import fftconvolve
 
 class Morphology(object):
     def __init__(self,Domain,subDomain,grid,radius):
@@ -105,6 +107,7 @@ class Morphology(object):
 
     def morphAdd(self):
         gridOut = ndimage.binary_dilation(self.haloGrid,structure=self.structElem)
+        #gridOut = fftconvolve(self.haloGrid, self.structElem, mode='same') > 0.1
         dim = gridOut.shape
         self.gridOut = gridOut[self.halo[1]:dim[0]-self.halo[0],
                                self.halo[3]:dim[1]-self.halo[2],
@@ -112,11 +115,16 @@ class Morphology(object):
 
 
 
-def morph(rank,Domain,subDomain,grid,radius):
+def morph(rank,size,Domain,subDomain,grid,radius):
     sDMorph = Morphology(Domain = Domain,subDomain = subDomain, grid = grid, radius = radius)
     sDMorph.genStructElem()
     sDMorph.haloCommPack()
     sDMorph.haloComm()
     sDMorph.haloCommUnpack()
+    if rank ==0 :
+        print("Structure Ratio: ",sDMorph.structRatio)
+        start_time = time.time()
     sDMorph.morphAdd()
+    if rank ==0 :
+        print("Morph ADD: --- %s seconds ---" % (time.time() - start_time))
     return sDMorph

@@ -357,34 +357,25 @@ def domainGen( double[:] x, double[:] y, double[:] z, double[:,:] atom):
     return _grid
 
 
-def domainGenINK(int id,int totalNX, int totalNY, int totalNZ,
-                int lNX, int lNY, int lNZ,
-                int xS, int yS, int zS):
+def domainGenINK(double[:] x, double[:] y, double[:] z):
 
-    cdef double zMax = 1.5
-    cdef double xMax = 14.
 
-    cdef int i, j, k, ii, jj, kk
-    cdef double xScale,zScale,iScale,r,arg
+    cdef int NX = x.shape[0]
+    cdef int NY = y.shape[0]
+    cdef int NZ = z.shape[0]
+    cdef int i, j, k
+    cdef double r
 
-    zScale = totalNZ/(zMax * 2.)
-    xScale = xMax/totalNX
-
-    _grid = np.zeros((lNX, lNY, lNZ), dtype=np.uint8)
+    _grid = np.zeros((NX, NY, NZ), dtype=np.uint8)
     cdef cnp.uint8_t [:,:,:] grid
 
     grid = _grid
 
-    for i in range(0,lNX):
-      for j in range(0,lNY):
-        for k in range(0,lNZ):
-          ii = i + xS
-          jj = j + yS
-          kk = k + zS
-          iScale = xScale * ii
-          r = (0.01*math.cos(0.01*iScale) + 0.5*math.sin(iScale) + 0.75)*zScale
-          arg = (kk-totalNZ/2.)*(kk-totalNZ/2.) + (jj-totalNY/2.)*(jj-totalNY/2.)
-          if arg <= r*r:
+    for i in range(0,NX):
+      for j in range(0,NY):
+        for k in range(0,NZ):
+          r = (0.01*math.cos(0.01*x[i]) + 0.5*math.sin(x[i]) + 0.75)
+          if y[j]*y[j] + z[k]*z[k] <= r*r:
             grid[i,j,k] = 1
 
     return _grid

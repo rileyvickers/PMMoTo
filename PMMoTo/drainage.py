@@ -8,6 +8,7 @@ from . import morphology
 import communication
 comm = MPI.COMM_WORLD
 import sys
+import time
 
 """ TO DO:
            Periodic - Issue when self.subDomain.Id = neigh
@@ -394,15 +395,17 @@ class Drainage(object):
                     print("Set Not Matched! Hmmm",self.subDomain.ID,nbProc,ownSet,ownNodes)
 
     def organizeSets(self,size,drainData):
+
         if self.subDomain.ID == 0:
             allMatchedSets = np.zeros([0,5],dtype=np.int64)
             numSets = np.zeros(size,dtype=np.int64)
             numBoundSets = np.zeros(size,dtype=np.int64)
 
             for n in range(0,size):
-                allMatchedSets = np.append(allMatchedSets,drainData[n][0],axis=0)
                 numSets[n] = drainData[n][1]
                 numBoundSets[n] = drainData[n][2]
+                if numBoundSets[n] > 0:
+                    allMatchedSets = np.append(allMatchedSets,drainData[n][0],axis=0)
 
             ### Propagate Inlet Info
             for s in allMatchedSets:
@@ -542,7 +545,7 @@ def calcDrainage(rank,size,domain,subDomain,inlet,EDT):
 
     #pc = np.linspace(400, 400, 1)
     drain = Drainage(Domain = domain, Orientation = subDomain.Orientation, subDomain = subDomain, edt = EDT, gamma = 1., inlet = inlet)
-    drain.getDiameter(6)
+    drain.getDiameter(6.9909)
     drain.probeDistance()
     if rank == 0:
         print("Probe Diameter:",drain.probeD)
@@ -554,18 +557,31 @@ def calcDrainage(rank,size,domain,subDomain,inlet,EDT):
         drain.nwp = np.copy(subDomain.grid)
         drain.nwpFinal = drain.nwp
     else:
+        if rank==0:
+            start_time = time.time()
         drain.getNodeInfo()
+        if rank==0:
+            print("Drain Info --- %s seconds ---" % (time.time() - start_time))
         drain.getConnectedSets()
-        drain.getBoundarySets()
-        drain.drainCOMM()
-        drain.drainCOMMUnpack()
-        drain.correctBoundarySets()
-        drainData = [drain.matchedSets,drain.setCount,drain.boundSetCount]
-        drainData = comm.gather(drainData, root=0)
-        drain.organizeSets(size,drainData)
-        drain.updateSetID()
+        if size > 1:
+            drain.getBoundarySets()
+            if rank==0:
+                start_time = time.time()
+            drain.drainCOMM()
+            if rank==0:
+                print("Drain COMM --- %s seconds ---" % (time.time() - start_time))
+            drain.drainCOMMUnpack()
+            drain.correctBoundarySets()
+            drainData = [drain.matchedSets,drain.setCount,drain.boundSetCount]
+            drainData = comm.gather(drainData, root=0)
+            drain.organizeSets(size,drainData)
+            drain.updateSetID()
         drain.getNWP()
-        morphL = morphology.morph(rank,domain,subDomain,drain.nwp,drain.probeR)
+        if rank==0:
+            start_time = time.time()
+        morphL = morphology.morph(rank,size,domain,subDomain,drain.nwp,drain.probeR)
+        if rank==0:
+            print("Morph --- %s seconds ---" % (time.time() - start_time))
         drain.finalizeNWP(morphL.gridOut)
 
         numNWPSum = np.zeros(1,dtype=np.uint64)
