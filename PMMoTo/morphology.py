@@ -1,9 +1,9 @@
 import numpy as np
 from mpi4py import MPI
+from . import communication
 import math
 from scipy import ndimage
 comm = MPI.COMM_WORLD
-import communication
 import time
 from scipy.signal import fftconvolve
 

@@ -1,9 +1,10 @@
 import numpy as np
 from mpi4py import MPI
+from . import communication
+from _distance import _fixInterfaceCalc
 from scipy.spatial import KDTree
 import edt
 comm = MPI.COMM_WORLD
-import communication
 import time
 
 
@@ -519,8 +520,6 @@ class EDT(object):
         self.distVals,self.distCounts  = np.unique(ownEDT,return_counts=True)
 
 def calcEDT(rank,size,domain,subDomain,grid):
-
-    #numSubDomains = np.prod(subDomain.Domain.subDomains)
 
     sDEDT = EDT(Domain = domain, ID = rank, subDomain = subDomain, Orientation = subDomain.Orientation, grid = grid)
     sDEDT.genLocalEDT()

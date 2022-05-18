@@ -1,7 +1,6 @@
 import numpy as np
 from mpi4py import MPI
-from MAtools import domainGen
-from MAtools import domainGenINK
+from _domainGeneration import domainGenINK
 import sys
 import pdb
 comm = MPI.COMM_WORLD

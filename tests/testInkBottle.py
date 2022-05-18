@@ -20,9 +20,9 @@ if rank==0:
     start_time = time.time()
 
 subDomains = [4,1,1]
-#nodes = [280,60,60]
+nodes = [280,60,60]
 #nodes = [560,120,120]
-nodes = [840,180,180]
+#nodes = [840,180,180]
 #nodes = [1120,240,240]
 periodic = [False,False,False]
 inlet  = [ 1,0,0]

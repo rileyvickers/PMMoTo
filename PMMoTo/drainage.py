@@ -1,12 +1,12 @@
 import numpy as np
 from mpi4py import MPI
+comm = MPI.COMM_WORLD
+from . import communication
+from . import distance
+from . import morphology
 from scipy.spatial import KDTree
 import edt
 import pdb
-from . import distance
-from . import morphology
-import communication
-comm = MPI.COMM_WORLD
 import sys
 import time
 
