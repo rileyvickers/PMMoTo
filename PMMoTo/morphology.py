@@ -106,8 +106,8 @@ class Morphology(object):
                     self.haloGrid[self.slices[cIndex,0],self.slices[cIndex,1],self.slices[cIndex,2]] = self.haloData[neigh]['NeighborProcID'][neigh]
 
     def morphAdd(self):
-        gridOut = ndimage.binary_dilation(self.haloGrid,structure=self.structElem)
-        #gridOut = fftconvolve(self.haloGrid, self.structElem, mode='same') > 0.1
+        #gridOut = ndimage.binary_dilation(self.haloGrid,structure=self.structElem)
+        gridOut = fftconvolve(self.haloGrid, self.structElem, mode='same') > 0.1
         dim = gridOut.shape
         self.gridOut = gridOut[self.halo[1]:dim[0]-self.halo[0],
                                self.halo[3]:dim[1]-self.halo[2],

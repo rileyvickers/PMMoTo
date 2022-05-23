@@ -2,6 +2,8 @@ from setuptools import setup
 from distutils.core import setup,Extension
 from Cython.Distutils import build_ext
 from Cython.Build import cythonize
+import Cython.Compiler.Options
+Cython.Compiler.Options.annotate = True
 
 import numpy
 
@@ -14,6 +16,7 @@ ext_modules = []
 ext_modules += [
     Extension("_domainGeneration", ["PMMoTo/_domainGeneration.pyx"],include_dirs=['PMMoTo']),
     Extension("_distance", ["PMMoTo/_distance.pyx"],include_dirs=['PMMoTo']),
+    Extension("_drainage", ["PMMoTo/_drainage.pyx"],include_dirs=['PMMoTo']),
 ]
 cmdclass.update({'build_ext': build_ext})
 
@@ -27,7 +30,7 @@ setup(
     long_description_content_type='text/markdown',
     url="https://github.com/tmweigand/PMMoTo",
     cmdclass=cmdclass,
-    ext_modules=cythonize(ext_modules),
+    ext_modules=cythonize(ext_modules,annotate=True),
     include_dirs=numpy.get_include(),
     install_requires=[
         'numpy>=1.22.3',

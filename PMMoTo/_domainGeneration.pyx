@@ -10,7 +10,8 @@ from libc.stdio cimport printf
 cnp.import_array()
 
 
-def inAtom(double cx,double cy,double cz,double x,double y,double z,double r):
+cdef int inAtom(double cx,double cy,double cz,double x,double y,double z,double r):
+    cdef double re
     re = (cx - x)*(cx - x) + (cy - y)*(cy - y) + (cz - z)*(cz - z)
     if (re <= r): # already calculated 0.25*r*r
         return 0
@@ -26,6 +27,7 @@ def domainGen( double[:] x, double[:] y, double[:] z, double[:,:] atom):
     cdef int numObjects = atom.shape[1]
 
     cdef int i, j, k, c
+
 
     _grid = np.ones((NX, NY, NZ), dtype=np.uint8)
     cdef cnp.uint8_t [:,:,:] grid

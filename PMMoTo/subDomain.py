@@ -1,6 +1,7 @@
 import numpy as np
 from mpi4py import MPI
 from _domainGeneration import domainGenINK
+from _domainGeneration import domainGen
 import sys
 import pdb
 comm = MPI.COMM_WORLD
@@ -33,6 +34,13 @@ class Orientation(object):
                       3:{'ID':(0,-1,0), 'oppIndex':2, 'nC':1, 'nM':0, 'nN':2, 'dir':1},
                       4:{'ID':(0,0,1),  'oppIndex':5, 'nC':2, 'nM':0, 'nN':1, 'dir':-1},
                       5:{'ID':(0,0,-1), 'oppIndex':4, 'nC':2, 'nM':0, 'nN':1, 'dir':1},
+                      }
+        self.facesN= {0:{'ID':(1,0,0),  'oppIndex':1, 'argOrder':np.array([0,1,2],dtype=np.uint8), 'dir':-1},
+                      1:{'ID':(-1,0,0), 'oppIndex':0, 'argOrder':np.array([0,1,2],dtype=np.uint8), 'dir':1},
+                      2:{'ID':(0,1,0),  'oppIndex':3, 'argOrder':np.array([1,0,2],dtype=np.uint8), 'dir':-1},
+                      3:{'ID':(0,-1,0), 'oppIndex':2, 'argOrder':np.array([1,0,2],dtype=np.uint8), 'dir':1},
+                      4:{'ID':(0,0,1),  'oppIndex':5, 'argOrder':np.array([2,0,1],dtype=np.uint8), 'dir':-1},
+                      5:{'ID':(0,0,-1), 'oppIndex':4, 'argOrder':np.array([2,0,1],dtype=np.uint8), 'dir':1},
                       }
         self.edges = {0 :{'ID':(1,1,0),  'oppIndex':5, 'faceIndex':(0,2), 'dir':(0,1)},
                       1 :{'ID':(1,-1,0), 'oppIndex':4, 'faceIndex':(0,3), 'dir':(0,1)},
@@ -82,7 +90,37 @@ class Orientation(object):
                           23:{'ID':[1,1,-1],  'index': 23 ,'oppIndex': 2},
                           24:{'ID':[1,1,0],   'index': 24 ,'oppIndex': 1},
                           25:{'ID':[1,1,1],   'index': 25 ,'oppIndex': 0},
-                          }
+                           }
+        # self.directions ={0 :{'ID':[-1,-1,-1],'index': 0 ,'oppIndex':  13},
+        #                   1 :{'ID':[-1,-1, 1],'index': 1 ,'oppIndex':  12},
+        #                   2 :{'ID':[-1,-1, 0],'index': 2 ,'oppIndex':  14},
+        #                   3 :{'ID':[-1, 1,-1],'index': 3 ,'oppIndex':  10},
+        #                   4 :{'ID':[-1, 1, 1],'index': 4 ,'oppIndex':   9},
+        #                   5 :{'ID':[-1, 1, 0],'index': 5 ,'oppIndex':  11},
+        #                   6 :{'ID':[-1, 0,-1],'index': 6 ,'oppIndex':  16},
+        #                   7 :{'ID':[-1, 0, 1],'index': 7 ,'oppIndex':  15},
+        #                   8 :{'ID':[-1, 0, 0],'index': 8 ,'oppIndex':  17},
+        #                   9 :{'ID':[ 1,-1,-1],'index': 9 ,'oppIndex':   4},
+        #                   10:{'ID':[ 1,-1, 1],'index': 10 ,'oppIndex':  3},
+        #                   11:{'ID':[ 1,-1, 0],'index': 11 ,'oppIndex':  5},
+        #                   12:{'ID':[ 1, 1,-1],'index': 12 ,'oppIndex':  1},
+        #                   13:{'ID':[ 1, 1, 1],'index': 13 ,'oppIndex':  0},
+        #                   14:{'ID':[ 1, 1, 0],'index': 14 ,'oppIndex':  2},
+        #                   15:{'ID':[ 1, 0,-1],'index': 15 ,'oppIndex':  7},
+        #                   16:{'ID':[ 1, 0, 1],'index': 16 ,'oppIndex':  6},
+        #                   17:{'ID':[ 1, 0, 0],'index': 17 ,'oppIndex':  8},
+        #                   18:{'ID':[ 0,-1,-1],'index': 18 ,'oppIndex': 22},
+        #                   19:{'ID':[ 0,-1, 1],'index': 19 ,'oppIndex': 21},
+        #                   20:{'ID':[ 0,-1, 0],'index': 20 ,'oppIndex': 23},
+        #                   21:{'ID':[ 0, 1,-1],'index': 21 ,'oppIndex': 19},
+        #                   22:{'ID':[ 0, 1, 1],'index': 22 ,'oppIndex': 18},
+        #                   23:{'ID':[ 0, 1, 0],'index': 23 ,'oppIndex': 20},
+        #                   24:{'ID':[ 0, 0,-1],'index': 24 ,'oppIndex': 25},
+        #                   25:{'ID':[ 0, 0, 1],'index': 25 ,'oppIndex': 24},
+        #                   }
+
+
+
 
     def getSendSlices(self,structRatio,buffer):
 
@@ -286,9 +324,9 @@ class subDomain(object):
         if (self.subID[2] == (self.subDomains[2] - 1) and not self.Domain.periodic[2]):
             self.buffer[2][1] = 0
 
-        self.x = np.zeros([self.nodes[0] + self.buffer[0][0] + self.buffer[0][1]])
-        self.y = np.zeros([self.nodes[1] + self.buffer[1][0] + self.buffer[1][1]])
-        self.z = np.zeros([self.nodes[2] + self.buffer[2][0] + self.buffer[2][1]])
+        self.x = np.zeros([self.nodes[0] + self.buffer[0][0] + self.buffer[0][1]],dtype=np.double)
+        self.y = np.zeros([self.nodes[1] + self.buffer[1][0] + self.buffer[1][1]],dtype=np.double)
+        self.z = np.zeros([self.nodes[2] + self.buffer[2][0] + self.buffer[2][1]],dtype=np.double)
 
         c = 0
         for i in range(-self.buffer[0][0], self.nodes[0] + self.buffer[0][1]):

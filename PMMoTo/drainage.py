@@ -4,11 +4,10 @@ comm = MPI.COMM_WORLD
 from . import communication
 from . import distance
 from . import morphology
-from scipy.spatial import KDTree
-import edt
-import pdb
+from _drainage import _getDirection3D
+from _drainage import _genNodeDirections
 import sys
-import time
+
 
 """ TO DO:
            Periodic - Issue when self.subDomain.Id = neigh
@@ -40,7 +39,6 @@ class Set(object):
         for n in self.boundaryNodes:
             if n.boundaryID not in self.boundaryFaces:
                 self.boundaryFaces.append(n.boundaryID)
-
 
             bCount = np.sum(np.abs(n.boundaryID))
 
@@ -78,6 +76,7 @@ class Node(object):
         self.outlet = outlet
         self.dist   = dist
         self.direction = np.zeros(26,dtype='uint8')
+        self.nodeDirection = np.zeros(26,dtype='uint64')
         self.availDirection = 0
         self.visited = False
         self.medialNode = False
@@ -88,6 +87,9 @@ class Node(object):
 
     def validDirection(self,c):
         self.direction[c] = 1
+
+    def setNodeDirection(self,c,node):
+        self.nodeDirection[c] = node
 
     def saveDirection(self):
         self.saveDirection = np.copy(self.direction)
@@ -123,7 +125,8 @@ class Drainage(object):
             self.probeD = 2.*self.probeR
 
     def probeDistance(self):
-        self.ind = np.where(self.edt.EDT >= self.probeR,1,0)
+        self.ind = np.where(self.edt.EDT >= self.probeR,1,0).astype(np.uint8)
+        #self.ind = self.ind.astype('np.uint8')
         self.numNWP = np.sum(self.ind)
 
     def getNodeInfo(self):
@@ -196,21 +199,39 @@ class Drainage(object):
                             kLoc = 0
 
 
-                        globIndex = [iLoc,jLoc,kLoc]
+                        globIndex = iLoc*self.Domain.nodes[1]*self.Domain.nodes[2] +  jLoc*self.Domain.nodes[2] +  kLoc
                         self.nodeInfo[c] = Node(ID=c, localIndex = [i-1,j-1,k-1], globalIndex = globIndex, boundary = boundary, boundaryID = boundaryID, inlet = inlet)
                         self.nodeTable[i-1,j-1,k-1] = c
 
-                        for d in self.Orientation.directions:
-                            ii = self.Orientation.directions[d]['ID'][0]
-                            jj = self.Orientation.directions[d]['ID'][1]
-                            kk = self.Orientation.directions[d]['ID'][2]
-                            if (ind[i+ii,j+jj,k+kk] == 1):
-                                self.nodeInfo[c].validDirection(d)
-
-                        self.nodeInfo[c].getAvailDirections()
-                        self.nodeInfo[c].saveDirection = self.nodeInfo[c].availDirection
-
                         c = c + 1
+
+    def getNodeDirections(self):
+
+
+        ind = np.pad(self.ind,1)
+
+        _genNodeDirections(self,ind)
+
+        # c = 0
+        # for i in range(1,ind.shape[0]-1):
+        #     for j in range(1,ind.shape[1]-1):
+        #         for k in range(1,ind.shape[2]-1):
+        #             if (ind[i,j,k] == 1):
+        #                 availDirection = 0
+        #                 for d in self.Orientation.directions:
+        #                     ii = self.Orientation.directions[d]['ID'][0]
+        #                     jj = self.Orientation.directions[d]['ID'][1]
+        #                     kk = self.Orientation.directions[d]['ID'][2]
+        #                     if (ind[i+ii,j+jj,k+kk] == 1):
+        #                         self.nodeInfo[c].validDirection(d)
+        #                         node = self.nodeTable[i+ii-1,j+jj-1,k+kk-1]
+        #                         self.nodeInfo[c].setNodeDirection(d,node)
+        #                         availDirection += 1
+        #
+        #                 self.nodeInfo[c].availDirection = availDirection
+        #                 self.nodeInfo[c].saveDirection = self.nodeInfo[c].availDirection
+        #
+        #                 c = c + 1
 
     def getDirection3D(self,ID):
         """
@@ -218,25 +239,13 @@ class Drainage(object):
         and updates total number of available directions
         """
 
-        i = self.nodeInfo[ID].localIndex[0]
-        j = self.nodeInfo[ID].localIndex[1]
-        k = self.nodeInfo[ID].localIndex[2]
+        returnCell = _getDirection3D(self,
+                                     ID,
+                                     self.nodeInfo[ID].localIndex,
+                                     self.nodeInfo[ID].availDirection,
+                                     self.nodeInfo[ID].direction,
+                                     self.nodeInfo[ID].nodeDirection)
 
-        if self.nodeInfo[ID].direction.any():
-            d  = np.argmax(self.nodeInfo[ID].direction)
-
-            ii = self.Orientation.directions[d]['ID'][0]
-            jj = self.Orientation.directions[d]['ID'][1]
-            kk = self.Orientation.directions[d]['ID'][2]
-
-            oppDir = self.Orientation.directions[d]['oppIndex']
-            returnCell = self.nodeTable[i+ii,j+jj,k+kk]
-
-            self.nodeInfo[returnCell].direction[oppDir] = 0
-            self.nodeInfo[ID].direction[d] = 0
-            self.nodeInfo[ID].getAvailDirections()
-        else:
-            returnCell = -1
 
         return returnCell
 
@@ -255,11 +264,11 @@ class Drainage(object):
         for node in range(0,self.numNodes):
             queue=[node]
 
-            if self.nodeInfo[queue[0]].visited:
-                queue.pop(0)
+            if self.nodeInfo[queue[-1]].visited:
+                queue.pop(-1)
             else:
                 while queue:
-                    ID = queue.pop(0)
+                    ID = queue.pop(-1)
                     currentNode = self.nodeInfo[ID]
 
                     if currentNode.visited:
@@ -279,7 +288,12 @@ class Drainage(object):
 
                         while (currentNode.availDirection > 0):
 
-                            nodeValue = self.getDirection3D(ID)
+                            nodeValue = _getDirection3D(self,
+                                                        ID,
+                                                        self.nodeInfo[ID].localIndex,
+                                                        self.nodeInfo[ID].availDirection,
+                                                        self.nodeInfo[ID].direction,
+                                                        self.nodeInfo[ID].nodeDirection)
                             if (nodeValue > -1):
                                 if self.nodeInfo[nodeValue].visited:
                                     pass
@@ -376,19 +390,14 @@ class Drainage(object):
                 testSetKey = 0
                 matchedOut = False
                 while testSetKey < numOtherSetKeys:
-                    nOwn = 0
-                    matched = False
-                    while not matched and nOwn < numOwnNodes:
-                        otherNodes = otherBD[nbProc]['NeighborProcID'][nbProc]['setID'][otherSetKeys[testSetKey]]['boundaryNodes']
-                        otherInlet = otherBD[nbProc]['NeighborProcID'][nbProc]['setID'][otherSetKeys[testSetKey]]['inlet']
-                        if ownNodes[nOwn] in otherNodes:
-                            if (ownInlet or otherInlet):
-                                inlet = 1
-                            self.matchedSets.append([self.subDomain.ID,ownSet,nbProc,otherSetKeys[testSetKey],inlet])
-                            c = c + 1
-                            matched = True
-                            matchedOut = True
-                        nOwn = nOwn + 1
+                    otherNodes = otherBD[nbProc]['NeighborProcID'][nbProc]['setID'][otherSetKeys[testSetKey]]['boundaryNodes']
+                    otherInlet = otherBD[nbProc]['NeighborProcID'][nbProc]['setID'][otherSetKeys[testSetKey]]['inlet']
+
+                    if len(set(ownNodes).intersection(otherNodes)) > 0:
+                        if (ownInlet or otherInlet):
+                            inlet = 1
+                        self.matchedSets.append([self.subDomain.ID,ownSet,nbProc,otherSetKeys[testSetKey],inlet])
+                        matchedOut = True
                     testSetKey = testSetKey + 1
 
                 if not matchedOut:
@@ -545,7 +554,7 @@ def calcDrainage(rank,size,domain,subDomain,inlet,EDT):
 
     #pc = np.linspace(400, 400, 1)
     drain = Drainage(Domain = domain, Orientation = subDomain.Orientation, subDomain = subDomain, edt = EDT, gamma = 1., inlet = inlet)
-    drain.getDiameter(6.9909)
+    drain.getDiameter(2.1909)
     drain.probeDistance()
     if rank == 0:
         print("Probe Diameter:",drain.probeD)
@@ -557,19 +566,12 @@ def calcDrainage(rank,size,domain,subDomain,inlet,EDT):
         drain.nwp = np.copy(subDomain.grid)
         drain.nwpFinal = drain.nwp
     else:
-        if rank==0:
-            start_time = time.time()
         drain.getNodeInfo()
-        if rank==0:
-            print("Drain Info --- %s seconds ---" % (time.time() - start_time))
+        drain.getNodeDirections()
         drain.getConnectedSets()
         if size > 1:
             drain.getBoundarySets()
-            if rank==0:
-                start_time = time.time()
             drain.drainCOMM()
-            if rank==0:
-                print("Drain COMM --- %s seconds ---" % (time.time() - start_time))
             drain.drainCOMMUnpack()
             drain.correctBoundarySets()
             drainData = [drain.matchedSets,drain.setCount,drain.boundSetCount]
@@ -577,11 +579,7 @@ def calcDrainage(rank,size,domain,subDomain,inlet,EDT):
             drain.organizeSets(size,drainData)
             drain.updateSetID()
         drain.getNWP()
-        if rank==0:
-            start_time = time.time()
         morphL = morphology.morph(rank,size,domain,subDomain,drain.nwp,drain.probeR)
-        if rank==0:
-            print("Morph --- %s seconds ---" % (time.time() - start_time))
         drain.finalizeNWP(morphL.gridOut)
 
         numNWPSum = np.zeros(1,dtype=np.uint64)
