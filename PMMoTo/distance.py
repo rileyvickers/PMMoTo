@@ -57,7 +57,7 @@ class EDT(object):
             self.nS = _getBoundarySolids(self,
                                fIndex,
                                self.Orientation.faces[fIndex]['dir'],
-                               self.Orientation.facesN[fIndex]['argOrder'],
+                               self.Orientation.faces[fIndex]['argOrder'],
                                self.nS,
                                self.grid,
                                self.solids)
@@ -277,14 +277,14 @@ class EDT(object):
             self.EDT,self.visited = _fixInterfaceCalc(self,
                                                       tree,
                                                       fIndex,
-                                                      self.grid.shape[self.Orientation.facesN[fIndex]['argOrder'][0]],
+                                                      self.grid.shape[self.Orientation.faces[fIndex]['argOrder'][0]],
                                                       self.Orientation.faces[fIndex]['dir'],
                                                       faceSolids,
                                                       self.EDT,
                                                       self.visited,
                                                       minD,
                                                       coords,
-                                                      self.Orientation.facesN[fIndex]['argOrder'])
+                                                      self.Orientation.faces[fIndex]['argOrder'])
 
     def EDTCommPack(self):
 

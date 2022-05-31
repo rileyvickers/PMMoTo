@@ -1,6 +1,7 @@
 import numpy as np
 from mpi4py import MPI
 from . import communication
+import edt
 import math
 from scipy import ndimage
 comm = MPI.COMM_WORLD
@@ -93,7 +94,6 @@ class Morphology(object):
                     self.haloGrid[self.slices[eIndex,0],self.slices[eIndex,1],self.slices[eIndex,2]] = self.haloData[neigh]['NeighborProcID'][neigh]
 
         #### Corners ####
-
         self.slices = self.Orientation.recvCSlices
         for cIndex in self.Orientation.corners:
             neigh = self.subDomain.neighborC[cIndex]
@@ -107,7 +107,10 @@ class Morphology(object):
 
     def morphAdd(self):
         #gridOut = ndimage.binary_dilation(self.haloGrid,structure=self.structElem)
-        gridOut = fftconvolve(self.haloGrid, self.structElem, mode='same') > 0.1
+        # gridOut = ndimage.grey_dilation(self.haloGrid,structure=self.structElem)
+        #gridOut = fftconvolve(self.haloGrid, self.structElem, mode='same') > 0.1s
+        gridOutEDT = edt.edt3d(np.logical_not(self.haloGrid), anisotropy=(self.Domain.dX, self.Domain.dY, self.Domain.dZ))
+        gridOut = np.where( (gridOutEDT <= self.radius),1,0).astype(np.uint8)
         dim = gridOut.shape
         self.gridOut = gridOut[self.halo[1]:dim[0]-self.halo[0],
                                self.halo[3]:dim[1]-self.halo[2],
@@ -121,10 +124,6 @@ def morph(rank,size,Domain,subDomain,grid,radius):
     sDMorph.haloCommPack()
     sDMorph.haloComm()
     sDMorph.haloCommUnpack()
-    if rank ==0 :
-        print("Structure Ratio: ",sDMorph.structRatio)
-        start_time = time.time()
     sDMorph.morphAdd()
-    if rank ==0 :
-        print("Morph ADD: --- %s seconds ---" % (time.time() - start_time))
+
     return sDMorph

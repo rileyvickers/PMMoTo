@@ -1570,7 +1570,6 @@ static CYTHON_INLINE void __Pyx_ErrFetchInState(PyThreadState *tstate, PyObject 
 #define __Pyx_ErrFetch(type, value, tb)  PyErr_Fetch(type, value, tb)
 #endif
 
-#define __Pyx_BufPtrStrided3d(type, buf, i0, s0, i1, s1, i2, s2) (type)((char*)buf + i0 * s0 + i1 * s1 + i2 * s2)
 /* ObjectGetItem.proto */
 #if CYTHON_USE_TYPE_SLOTS
 static CYTHON_INLINE PyObject *__Pyx_PyObject_GetItem(PyObject *obj, PyObject* key);
@@ -1578,6 +1577,14 @@ static CYTHON_INLINE PyObject *__Pyx_PyObject_GetItem(PyObject *obj, PyObject* k
 #define __Pyx_PyObject_GetItem(obj, key)  PyObject_GetItem(obj, key)
 #endif
 
+/* PyObjectCall.proto */
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_Call(PyObject *func, PyObject *arg, PyObject *kw);
+#else
+#define __Pyx_PyObject_Call(func, arg, kw) PyObject_Call(func, arg, kw)
+#endif
+
+#define __Pyx_BufPtrStrided3d(type, buf, i0, s0, i1, s1, i2, s2) (type)((char*)buf + i0 * s0 + i1 * s1 + i2 * s2)
 /* GetTopmostException.proto */
 #if CYTHON_USE_EXC_INFO_STACK
 static _PyErr_StackItem * __Pyx_PyErr_GetTopmostException(PyThreadState *tstate);
@@ -1608,13 +1615,6 @@ static CYTHON_INLINE int __Pyx_PyErr_ExceptionMatchesInState(PyThreadState* tsta
 static int __Pyx__GetException(PyThreadState *tstate, PyObject **type, PyObject **value, PyObject **tb);
 #else
 static int __Pyx_GetException(PyObject **type, PyObject **value, PyObject **tb);
-#endif
-
-/* PyObjectCall.proto */
-#if CYTHON_COMPILING_IN_CPYTHON
-static CYTHON_INLINE PyObject* __Pyx_PyObject_Call(PyObject *func, PyObject *arg, PyObject *kw);
-#else
-#define __Pyx_PyObject_Call(func, arg, kw) PyObject_Call(func, arg, kw)
 #endif
 
 /* RaiseException.proto */
@@ -2243,12 +2243,12 @@ static const char __pyx_k_i[] = "i";
 static const char __pyx_k_j[] = "j";
 static const char __pyx_k_k[] = "k";
 static const char __pyx_k_ID[] = "ID";
-static const char __pyx_k_NX[] = "NX";
-static const char __pyx_k_NY[] = "NY";
-static const char __pyx_k_NZ[] = "NZ";
+static const char __pyx_k_iL[] = "iL";
 static const char __pyx_k_id[] = "id";
 static const char __pyx_k_ii[] = "ii";
+static const char __pyx_k_jL[] = "jL";
 static const char __pyx_k_jj[] = "jj";
+static const char __pyx_k_kL[] = "kL";
 static const char __pyx_k_kk[] = "kk";
 static const char __pyx_k_np[] = "np";
 static const char __pyx_k_ind[] = "_ind";
@@ -2274,6 +2274,7 @@ static const char __pyx_k_array[] = "array";
 static const char __pyx_k_class[] = "__class__";
 static const char __pyx_k_dtype[] = "dtype";
 static const char __pyx_k_error[] = "error";
+static const char __pyx_k_faces[] = "faces";
 static const char __pyx_k_flags[] = "flags";
 static const char __pyx_k_found[] = "found";
 static const char __pyx_k_numpy[] = "numpy";
@@ -2281,6 +2282,7 @@ static const char __pyx_k_range[] = "range";
 static const char __pyx_k_shape[] = "shape";
 static const char __pyx_k_start[] = "start";
 static const char __pyx_k_encode[] = "encode";
+static const char __pyx_k_fIndex[] = "fIndex";
 static const char __pyx_k_format[] = "format";
 static const char __pyx_k_import[] = "__import__";
 static const char __pyx_k_name_2[] = "__name__";
@@ -2292,12 +2294,15 @@ static const char __pyx_k_struct[] = "struct";
 static const char __pyx_k_unpack[] = "unpack";
 static const char __pyx_k_update[] = "update";
 static const char __pyx_k_fortran[] = "fortran";
+static const char __pyx_k_innerID[] = "innerID";
 static const char __pyx_k_memview[] = "memview";
 static const char __pyx_k_Ellipsis[] = "Ellipsis";
 static const char __pyx_k_drainage[] = "_drainage";
 static const char __pyx_k_getstate[] = "__getstate__";
 static const char __pyx_k_itemsize[] = "itemsize";
+static const char __pyx_k_loopInfo[] = "loopInfo";
 static const char __pyx_k_nodeInfo[] = "nodeInfo";
+static const char __pyx_k_numFaces[] = "numFaces";
 static const char __pyx_k_pyx_type[] = "__pyx_type";
 static const char __pyx_k_setstate[] = "__setstate__";
 static const char __pyx_k_TypeError[] = "TypeError";
@@ -2306,6 +2311,7 @@ static const char __pyx_k_enumerate[] = "enumerate";
 static const char __pyx_k_nodeTable[] = "nodeTable";
 static const char __pyx_k_pyx_state[] = "__pyx_state";
 static const char __pyx_k_reduce_ex[] = "__reduce_ex__";
+static const char __pyx_k_subDomain[] = "subDomain";
 static const char __pyx_k_IndexError[] = "IndexError";
 static const char __pyx_k_ValueError[] = "ValueError";
 static const char __pyx_k_directions[] = "_directions";
@@ -2315,14 +2321,15 @@ static const char __pyx_k_pyx_vtable[] = "__pyx_vtable__";
 static const char __pyx_k_returnCell[] = "returnCell";
 static const char __pyx_k_ImportError[] = "ImportError";
 static const char __pyx_k_MemoryError[] = "MemoryError";
+static const char __pyx_k_Orientation[] = "Orientation";
 static const char __pyx_k_PickleError[] = "PickleError";
 static const char __pyx_k_direction_2[] = "direction";
+static const char __pyx_k_genNodeInfo[] = "_genNodeInfo";
 static const char __pyx_k_pyx_checksum[] = "__pyx_checksum";
 static const char __pyx_k_stringsource[] = "stringsource";
 static const char __pyx_k_nodeDirection[] = "nodeDirection";
 static const char __pyx_k_pyx_getbuffer[] = "__pyx_getbuffer";
 static const char __pyx_k_reduce_cython[] = "__reduce_cython__";
-static const char __pyx_k_saveDirection[] = "saveDirection";
 static const char __pyx_k_availDirection[] = "_availDirection";
 static const char __pyx_k_getDirection3D[] = "_getDirection3D";
 static const char __pyx_k_View_MemoryView[] = "View.MemoryView";
@@ -2379,10 +2386,8 @@ static PyObject *__pyx_kp_s_Invalid_shape_in_axis_d_d;
 static PyObject *__pyx_n_s_MemoryError;
 static PyObject *__pyx_kp_s_MemoryView_of_r_at_0x_x;
 static PyObject *__pyx_kp_s_MemoryView_of_r_object;
-static PyObject *__pyx_n_s_NX;
-static PyObject *__pyx_n_s_NY;
-static PyObject *__pyx_n_s_NZ;
 static PyObject *__pyx_n_b_O;
+static PyObject *__pyx_n_s_Orientation;
 static PyObject *__pyx_kp_s_Out_of_bounds_on_buffer_access_a;
 static PyObject *__pyx_kp_s_PMMoTo__drainage_pyx;
 static PyObject *__pyx_n_s_PickleError;
@@ -2412,28 +2417,36 @@ static PyObject *__pyx_n_s_dtype_is_object;
 static PyObject *__pyx_n_s_encode;
 static PyObject *__pyx_n_s_enumerate;
 static PyObject *__pyx_n_s_error;
+static PyObject *__pyx_n_s_fIndex;
+static PyObject *__pyx_n_s_faces;
 static PyObject *__pyx_n_s_flags;
 static PyObject *__pyx_n_s_format;
 static PyObject *__pyx_n_s_fortran;
 static PyObject *__pyx_n_u_fortran;
 static PyObject *__pyx_n_s_found;
 static PyObject *__pyx_n_s_genNodeDirections;
+static PyObject *__pyx_n_s_genNodeInfo;
 static PyObject *__pyx_n_s_getDirection3D;
 static PyObject *__pyx_n_s_getstate;
 static PyObject *__pyx_kp_s_got_differing_extents_in_dimensi;
 static PyObject *__pyx_n_s_i;
+static PyObject *__pyx_n_s_iL;
 static PyObject *__pyx_n_s_id;
 static PyObject *__pyx_n_s_ii;
 static PyObject *__pyx_n_s_import;
 static PyObject *__pyx_n_s_ind;
+static PyObject *__pyx_n_s_innerID;
 static PyObject *__pyx_n_s_int8;
 static PyObject *__pyx_n_s_itemsize;
 static PyObject *__pyx_kp_s_itemsize_0_for_cython_array;
 static PyObject *__pyx_n_s_j;
+static PyObject *__pyx_n_s_jL;
 static PyObject *__pyx_n_s_jj;
 static PyObject *__pyx_n_s_k;
+static PyObject *__pyx_n_s_kL;
 static PyObject *__pyx_n_s_kk;
 static PyObject *__pyx_n_s_localIndex;
+static PyObject *__pyx_n_s_loopInfo;
 static PyObject *__pyx_n_s_main;
 static PyObject *__pyx_n_s_math;
 static PyObject *__pyx_n_s_memview;
@@ -2449,6 +2462,7 @@ static PyObject *__pyx_n_s_nodeInfo;
 static PyObject *__pyx_n_s_nodeTable;
 static PyObject *__pyx_n_s_node_2;
 static PyObject *__pyx_n_s_np;
+static PyObject *__pyx_n_s_numFaces;
 static PyObject *__pyx_n_s_numpy;
 static PyObject *__pyx_kp_s_numpy_core_multiarray_failed_to;
 static PyObject *__pyx_kp_s_numpy_core_umath_failed_to_impor;
@@ -2469,7 +2483,6 @@ static PyObject *__pyx_n_s_reduce;
 static PyObject *__pyx_n_s_reduce_cython;
 static PyObject *__pyx_n_s_reduce_ex;
 static PyObject *__pyx_n_s_returnCell;
-static PyObject *__pyx_n_s_saveDirection;
 static PyObject *__pyx_n_s_self;
 static PyObject *__pyx_n_s_setstate;
 static PyObject *__pyx_n_s_setstate_cython;
@@ -2483,6 +2496,7 @@ static PyObject *__pyx_kp_s_strided_and_direct_or_indirect;
 static PyObject *__pyx_kp_s_strided_and_indirect;
 static PyObject *__pyx_kp_s_stringsource;
 static PyObject *__pyx_n_s_struct;
+static PyObject *__pyx_n_s_subDomain;
 static PyObject *__pyx_n_s_test;
 static PyObject *__pyx_kp_s_unable_to_allocate_array_data;
 static PyObject *__pyx_kp_s_unable_to_allocate_shape_and_str;
@@ -2490,6 +2504,7 @@ static PyObject *__pyx_n_s_unpack;
 static PyObject *__pyx_n_s_update;
 static PyObject *__pyx_pf_9_drainage__getDirection3D(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, int __pyx_v_ID, PyObject *__pyx_v__localIndex, int __pyx_v__availDirection, PyArrayObject *__pyx_v__direction, PyArrayObject *__pyx_v__node); /* proto */
 static PyObject *__pyx_pf_9_drainage_2_genNodeDirections(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyArrayObject *__pyx_v__ind); /* proto */
+static PyObject *__pyx_pf_9_drainage_4_genNodeInfo(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self); /* proto */
 static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array___cinit__(struct __pyx_array_obj *__pyx_v_self, PyObject *__pyx_v_shape, Py_ssize_t __pyx_v_itemsize, PyObject *__pyx_v_format, PyObject *__pyx_v_mode, int __pyx_v_allocate_buffer); /* proto */
 static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array_2__getbuffer__(struct __pyx_array_obj *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /* proto */
 static void __pyx_array___pyx_pf_15View_dot_MemoryView_5array_4__dealloc__(struct __pyx_array_obj *__pyx_v_self); /* proto */
@@ -2587,17 +2602,19 @@ static PyObject *__pyx_tuple__20;
 static PyObject *__pyx_tuple__21;
 static PyObject *__pyx_tuple__23;
 static PyObject *__pyx_tuple__25;
-static PyObject *__pyx_tuple__26;
 static PyObject *__pyx_tuple__27;
 static PyObject *__pyx_tuple__28;
 static PyObject *__pyx_tuple__29;
 static PyObject *__pyx_tuple__30;
+static PyObject *__pyx_tuple__31;
+static PyObject *__pyx_tuple__32;
 static PyObject *__pyx_codeobj__22;
 static PyObject *__pyx_codeobj__24;
-static PyObject *__pyx_codeobj__31;
+static PyObject *__pyx_codeobj__26;
+static PyObject *__pyx_codeobj__33;
 /* Late includes */
 
-/* "_drainage.pyx":74
+/* "_drainage.pyx":46
  * 
  * 
  * def _getDirection3D(self,             # <<<<<<<<<<<<<<
@@ -2652,35 +2669,35 @@ static PyObject *__pyx_pw_9_drainage_1_getDirection3D(PyObject *__pyx_self, PyOb
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_ID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("_getDirection3D", 1, 6, 6, 1); __PYX_ERR(0, 74, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("_getDirection3D", 1, 6, 6, 1); __PYX_ERR(0, 46, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_localIndex)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("_getDirection3D", 1, 6, 6, 2); __PYX_ERR(0, 74, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("_getDirection3D", 1, 6, 6, 2); __PYX_ERR(0, 46, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_availDirection)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("_getDirection3D", 1, 6, 6, 3); __PYX_ERR(0, 74, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("_getDirection3D", 1, 6, 6, 3); __PYX_ERR(0, 46, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_direction)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("_getDirection3D", 1, 6, 6, 4); __PYX_ERR(0, 74, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("_getDirection3D", 1, 6, 6, 4); __PYX_ERR(0, 46, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  5:
         if (likely((values[5] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_node)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("_getDirection3D", 1, 6, 6, 5); __PYX_ERR(0, 74, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("_getDirection3D", 1, 6, 6, 5); __PYX_ERR(0, 46, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "_getDirection3D") < 0)) __PYX_ERR(0, 74, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "_getDirection3D") < 0)) __PYX_ERR(0, 46, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 6) {
       goto __pyx_L5_argtuple_error;
@@ -2693,23 +2710,23 @@ static PyObject *__pyx_pw_9_drainage_1_getDirection3D(PyObject *__pyx_self, PyOb
       values[5] = PyTuple_GET_ITEM(__pyx_args, 5);
     }
     __pyx_v_self = values[0];
-    __pyx_v_ID = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_ID == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 75, __pyx_L3_error)
+    __pyx_v_ID = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_ID == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 47, __pyx_L3_error)
     __pyx_v__localIndex = ((PyObject*)values[2]);
-    __pyx_v__availDirection = __Pyx_PyInt_As_int(values[3]); if (unlikely((__pyx_v__availDirection == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 77, __pyx_L3_error)
+    __pyx_v__availDirection = __Pyx_PyInt_As_int(values[3]); if (unlikely((__pyx_v__availDirection == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 49, __pyx_L3_error)
     __pyx_v__direction = ((PyArrayObject *)values[4]);
     __pyx_v__node = ((PyArrayObject *)values[5]);
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("_getDirection3D", 1, 6, 6, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 74, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("_getDirection3D", 1, 6, 6, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 46, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("_drainage._getDirection3D", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v__localIndex), (&PyList_Type), 1, "_localIndex", 1))) __PYX_ERR(0, 76, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v__direction), __pyx_ptype_5numpy_ndarray, 1, "_direction", 0))) __PYX_ERR(0, 78, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v__node), __pyx_ptype_5numpy_ndarray, 1, "_node", 0))) __PYX_ERR(0, 79, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v__localIndex), (&PyList_Type), 1, "_localIndex", 1))) __PYX_ERR(0, 48, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v__direction), __pyx_ptype_5numpy_ndarray, 1, "_direction", 0))) __PYX_ERR(0, 50, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v__node), __pyx_ptype_5numpy_ndarray, 1, "_node", 0))) __PYX_ERR(0, 51, __pyx_L1_error)
   __pyx_r = __pyx_pf_9_drainage__getDirection3D(__pyx_self, __pyx_v_self, __pyx_v_ID, __pyx_v__localIndex, __pyx_v__availDirection, __pyx_v__direction, __pyx_v__node);
 
   /* function exit code */
@@ -2760,16 +2777,16 @@ static PyObject *__pyx_pf_9_drainage__getDirection3D(CYTHON_UNUSED PyObject *__p
   __pyx_pybuffernd__node.rcbuffer = &__pyx_pybuffer__node;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd__direction.rcbuffer->pybuffer, (PyObject*)__pyx_v__direction, &__Pyx_TypeInfo_nn___pyx_t_5numpy_uint8_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 74, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd__direction.rcbuffer->pybuffer, (PyObject*)__pyx_v__direction, &__Pyx_TypeInfo_nn___pyx_t_5numpy_uint8_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 46, __pyx_L1_error)
   }
   __pyx_pybuffernd__direction.diminfo[0].strides = __pyx_pybuffernd__direction.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd__direction.diminfo[0].shape = __pyx_pybuffernd__direction.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd__node.rcbuffer->pybuffer, (PyObject*)__pyx_v__node, &__Pyx_TypeInfo_nn___pyx_t_5numpy_uint64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 74, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd__node.rcbuffer->pybuffer, (PyObject*)__pyx_v__node, &__Pyx_TypeInfo_nn___pyx_t_5numpy_uint64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 46, __pyx_L1_error)
   }
   __pyx_pybuffernd__node.diminfo[0].strides = __pyx_pybuffernd__node.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd__node.diminfo[0].shape = __pyx_pybuffernd__node.rcbuffer->pybuffer.shape[0];
 
-  /* "_drainage.pyx":83
+  /* "_drainage.pyx":55
  * 
  * 
  *   cdef int i = _localIndex[0]             # <<<<<<<<<<<<<<
@@ -2778,12 +2795,12 @@ static PyObject *__pyx_pf_9_drainage__getDirection3D(CYTHON_UNUSED PyObject *__p
  */
   if (unlikely(__pyx_v__localIndex == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-    __PYX_ERR(0, 83, __pyx_L1_error)
+    __PYX_ERR(0, 55, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_PyInt_As_int(PyList_GET_ITEM(__pyx_v__localIndex, 0)); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 83, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_As_int(PyList_GET_ITEM(__pyx_v__localIndex, 0)); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 55, __pyx_L1_error)
   __pyx_v_i = __pyx_t_1;
 
-  /* "_drainage.pyx":84
+  /* "_drainage.pyx":56
  * 
  *   cdef int i = _localIndex[0]
  *   cdef int j = _localIndex[1]             # <<<<<<<<<<<<<<
@@ -2792,12 +2809,12 @@ static PyObject *__pyx_pf_9_drainage__getDirection3D(CYTHON_UNUSED PyObject *__p
  */
   if (unlikely(__pyx_v__localIndex == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-    __PYX_ERR(0, 84, __pyx_L1_error)
+    __PYX_ERR(0, 56, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_PyInt_As_int(PyList_GET_ITEM(__pyx_v__localIndex, 1)); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 84, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_As_int(PyList_GET_ITEM(__pyx_v__localIndex, 1)); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 56, __pyx_L1_error)
   __pyx_v_j = __pyx_t_1;
 
-  /* "_drainage.pyx":85
+  /* "_drainage.pyx":57
  *   cdef int i = _localIndex[0]
  *   cdef int j = _localIndex[1]
  *   cdef int k = _localIndex[2]             # <<<<<<<<<<<<<<
@@ -2806,12 +2823,12 @@ static PyObject *__pyx_pf_9_drainage__getDirection3D(CYTHON_UNUSED PyObject *__p
  */
   if (unlikely(__pyx_v__localIndex == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-    __PYX_ERR(0, 85, __pyx_L1_error)
+    __PYX_ERR(0, 57, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_PyInt_As_int(PyList_GET_ITEM(__pyx_v__localIndex, 2)); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 85, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_As_int(PyList_GET_ITEM(__pyx_v__localIndex, 2)); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 57, __pyx_L1_error)
   __pyx_v_k = __pyx_t_1;
 
-  /* "_drainage.pyx":89
+  /* "_drainage.pyx":61
  *   cdef int d,ii,jj,kk,oppDir,returnCell,found
  * 
  *   if _availDirection > 0:             # <<<<<<<<<<<<<<
@@ -2821,7 +2838,7 @@ static PyObject *__pyx_pf_9_drainage__getDirection3D(CYTHON_UNUSED PyObject *__p
   __pyx_t_2 = ((__pyx_v__availDirection > 0) != 0);
   if (__pyx_t_2) {
 
-    /* "_drainage.pyx":90
+    /* "_drainage.pyx":62
  * 
  *   if _availDirection > 0:
  *       d = 25             # <<<<<<<<<<<<<<
@@ -2830,7 +2847,7 @@ static PyObject *__pyx_pf_9_drainage__getDirection3D(CYTHON_UNUSED PyObject *__p
  */
     __pyx_v_d = 25;
 
-    /* "_drainage.pyx":91
+    /* "_drainage.pyx":63
  *   if _availDirection > 0:
  *       d = 25
  *       found = 0             # <<<<<<<<<<<<<<
@@ -2839,7 +2856,7 @@ static PyObject *__pyx_pf_9_drainage__getDirection3D(CYTHON_UNUSED PyObject *__p
  */
     __pyx_v_found = 0;
 
-    /* "_drainage.pyx":92
+    /* "_drainage.pyx":64
  *       d = 25
  *       found = 0
  *       while d > 0  and not found:             # <<<<<<<<<<<<<<
@@ -2858,7 +2875,7 @@ static PyObject *__pyx_pf_9_drainage__getDirection3D(CYTHON_UNUSED PyObject *__p
       __pyx_L6_bool_binop_done:;
       if (!__pyx_t_2) break;
 
-      /* "_drainage.pyx":93
+      /* "_drainage.pyx":65
  *       found = 0
  *       while d > 0  and not found:
  *         if _direction[d] == 1:             # <<<<<<<<<<<<<<
@@ -2869,7 +2886,7 @@ static PyObject *__pyx_pf_9_drainage__getDirection3D(CYTHON_UNUSED PyObject *__p
       __pyx_t_2 = (((*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_uint8_t *, __pyx_pybuffernd__direction.rcbuffer->pybuffer.buf, __pyx_t_4, __pyx_pybuffernd__direction.diminfo[0].strides)) == 1) != 0);
       if (__pyx_t_2) {
 
-        /* "_drainage.pyx":94
+        /* "_drainage.pyx":66
  *       while d > 0  and not found:
  *         if _direction[d] == 1:
  *           found = 1             # <<<<<<<<<<<<<<
@@ -2878,7 +2895,7 @@ static PyObject *__pyx_pf_9_drainage__getDirection3D(CYTHON_UNUSED PyObject *__p
  */
         __pyx_v_found = 1;
 
-        /* "_drainage.pyx":93
+        /* "_drainage.pyx":65
  *       found = 0
  *       while d > 0  and not found:
  *         if _direction[d] == 1:             # <<<<<<<<<<<<<<
@@ -2888,7 +2905,7 @@ static PyObject *__pyx_pf_9_drainage__getDirection3D(CYTHON_UNUSED PyObject *__p
         goto __pyx_L8;
       }
 
-      /* "_drainage.pyx":96
+      /* "_drainage.pyx":68
  *           found = 1
  *         else:
  *           d = d - 1             # <<<<<<<<<<<<<<
@@ -2901,55 +2918,55 @@ static PyObject *__pyx_pf_9_drainage__getDirection3D(CYTHON_UNUSED PyObject *__p
       __pyx_L8:;
     }
 
-    /* "_drainage.pyx":99
+    /* "_drainage.pyx":71
  * 
  * 
  *       ii = directions[d][0]             # <<<<<<<<<<<<<<
  *       jj = directions[d][1]
  *       kk = directions[d][2]
  */
-    if (unlikely(!__pyx_v_9_drainage_directions.memview)) { __Pyx_RaiseUnboundLocalError("directions"); __PYX_ERR(0, 99, __pyx_L1_error) }
+    if (unlikely(!__pyx_v_9_drainage_directions.memview)) { __Pyx_RaiseUnboundLocalError("directions"); __PYX_ERR(0, 71, __pyx_L1_error) }
     __pyx_t_4 = __pyx_v_d;
     __pyx_t_5 = 0;
     __pyx_v_ii = (*((__pyx_t_5numpy_int8_t *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_9_drainage_directions.data + __pyx_t_4 * __pyx_v_9_drainage_directions.strides[0]) ) + __pyx_t_5 * __pyx_v_9_drainage_directions.strides[1]) )));
 
-    /* "_drainage.pyx":100
+    /* "_drainage.pyx":72
  * 
  *       ii = directions[d][0]
  *       jj = directions[d][1]             # <<<<<<<<<<<<<<
  *       kk = directions[d][2]
  * 
  */
-    if (unlikely(!__pyx_v_9_drainage_directions.memview)) { __Pyx_RaiseUnboundLocalError("directions"); __PYX_ERR(0, 100, __pyx_L1_error) }
+    if (unlikely(!__pyx_v_9_drainage_directions.memview)) { __Pyx_RaiseUnboundLocalError("directions"); __PYX_ERR(0, 72, __pyx_L1_error) }
     __pyx_t_5 = __pyx_v_d;
     __pyx_t_4 = 1;
     __pyx_v_jj = (*((__pyx_t_5numpy_int8_t *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_9_drainage_directions.data + __pyx_t_5 * __pyx_v_9_drainage_directions.strides[0]) ) + __pyx_t_4 * __pyx_v_9_drainage_directions.strides[1]) )));
 
-    /* "_drainage.pyx":101
+    /* "_drainage.pyx":73
  *       ii = directions[d][0]
  *       jj = directions[d][1]
  *       kk = directions[d][2]             # <<<<<<<<<<<<<<
  * 
  *       oppDir = directions[d][4]
  */
-    if (unlikely(!__pyx_v_9_drainage_directions.memview)) { __Pyx_RaiseUnboundLocalError("directions"); __PYX_ERR(0, 101, __pyx_L1_error) }
+    if (unlikely(!__pyx_v_9_drainage_directions.memview)) { __Pyx_RaiseUnboundLocalError("directions"); __PYX_ERR(0, 73, __pyx_L1_error) }
     __pyx_t_4 = __pyx_v_d;
     __pyx_t_5 = 2;
     __pyx_v_kk = (*((__pyx_t_5numpy_int8_t *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_9_drainage_directions.data + __pyx_t_4 * __pyx_v_9_drainage_directions.strides[0]) ) + __pyx_t_5 * __pyx_v_9_drainage_directions.strides[1]) )));
 
-    /* "_drainage.pyx":103
+    /* "_drainage.pyx":75
  *       kk = directions[d][2]
  * 
  *       oppDir = directions[d][4]             # <<<<<<<<<<<<<<
  *       returnCell = _node[d]
  * 
  */
-    if (unlikely(!__pyx_v_9_drainage_directions.memview)) { __Pyx_RaiseUnboundLocalError("directions"); __PYX_ERR(0, 103, __pyx_L1_error) }
+    if (unlikely(!__pyx_v_9_drainage_directions.memview)) { __Pyx_RaiseUnboundLocalError("directions"); __PYX_ERR(0, 75, __pyx_L1_error) }
     __pyx_t_5 = __pyx_v_d;
     __pyx_t_4 = 4;
     __pyx_v_oppDir = (*((__pyx_t_5numpy_int8_t *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_9_drainage_directions.data + __pyx_t_5 * __pyx_v_9_drainage_directions.strides[0]) ) + __pyx_t_4 * __pyx_v_9_drainage_directions.strides[1]) )));
 
-    /* "_drainage.pyx":104
+    /* "_drainage.pyx":76
  * 
  *       oppDir = directions[d][4]
  *       returnCell = _node[d]             # <<<<<<<<<<<<<<
@@ -2959,64 +2976,64 @@ static PyObject *__pyx_pf_9_drainage__getDirection3D(CYTHON_UNUSED PyObject *__p
     __pyx_t_4 = __pyx_v_d;
     __pyx_v_returnCell = (*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_uint64_t *, __pyx_pybuffernd__node.rcbuffer->pybuffer.buf, __pyx_t_4, __pyx_pybuffernd__node.diminfo[0].strides));
 
-    /* "_drainage.pyx":106
+    /* "_drainage.pyx":78
  *       returnCell = _node[d]
  * 
  *       self.nodeInfo[returnCell].direction[oppDir] = 0             # <<<<<<<<<<<<<<
  *       self.nodeInfo[ID].direction[d] = 0
  *       self.nodeInfo[ID].availDirection -= 1
  */
-    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeInfo); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 106, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeInfo); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 78, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
-    __pyx_t_7 = __Pyx_GetItemInt(__pyx_t_6, __pyx_v_returnCell, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 106, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_GetItemInt(__pyx_t_6, __pyx_v_returnCell, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 78, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_n_s_direction_2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 106, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_n_s_direction_2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 78, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    if (unlikely(__Pyx_SetItemInt(__pyx_t_6, __pyx_v_oppDir, __pyx_int_0, int, 1, __Pyx_PyInt_From_int, 0, 0, 0) < 0)) __PYX_ERR(0, 106, __pyx_L1_error)
+    if (unlikely(__Pyx_SetItemInt(__pyx_t_6, __pyx_v_oppDir, __pyx_int_0, int, 1, __Pyx_PyInt_From_int, 0, 0, 0) < 0)) __PYX_ERR(0, 78, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
 
-    /* "_drainage.pyx":107
+    /* "_drainage.pyx":79
  * 
  *       self.nodeInfo[returnCell].direction[oppDir] = 0
  *       self.nodeInfo[ID].direction[d] = 0             # <<<<<<<<<<<<<<
  *       self.nodeInfo[ID].availDirection -= 1
  *   else:
  */
-    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeInfo); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 107, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeInfo); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 79, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
-    __pyx_t_7 = __Pyx_GetItemInt(__pyx_t_6, __pyx_v_ID, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 107, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_GetItemInt(__pyx_t_6, __pyx_v_ID, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 79, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_n_s_direction_2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 107, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_n_s_direction_2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 79, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    if (unlikely(__Pyx_SetItemInt(__pyx_t_6, __pyx_v_d, __pyx_int_0, int, 1, __Pyx_PyInt_From_int, 0, 0, 0) < 0)) __PYX_ERR(0, 107, __pyx_L1_error)
+    if (unlikely(__Pyx_SetItemInt(__pyx_t_6, __pyx_v_d, __pyx_int_0, int, 1, __Pyx_PyInt_From_int, 0, 0, 0) < 0)) __PYX_ERR(0, 79, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
 
-    /* "_drainage.pyx":108
+    /* "_drainage.pyx":80
  *       self.nodeInfo[returnCell].direction[oppDir] = 0
  *       self.nodeInfo[ID].direction[d] = 0
  *       self.nodeInfo[ID].availDirection -= 1             # <<<<<<<<<<<<<<
  *   else:
  *       returnCell = -1
  */
-    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeInfo); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 108, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeInfo); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 80, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
-    __pyx_t_7 = __Pyx_GetItemInt(__pyx_t_6, __pyx_v_ID, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 108, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_GetItemInt(__pyx_t_6, __pyx_v_ID, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 80, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_n_s_availDirection_2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 108, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_n_s_availDirection_2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 80, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
-    __pyx_t_8 = __Pyx_PyInt_SubtractObjC(__pyx_t_6, __pyx_int_1, 1, 1, 0); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 108, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_PyInt_SubtractObjC(__pyx_t_6, __pyx_int_1, 1, 1, 0); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 80, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    if (__Pyx_PyObject_SetAttrStr(__pyx_t_7, __pyx_n_s_availDirection_2, __pyx_t_8) < 0) __PYX_ERR(0, 108, __pyx_L1_error)
+    if (__Pyx_PyObject_SetAttrStr(__pyx_t_7, __pyx_n_s_availDirection_2, __pyx_t_8) < 0) __PYX_ERR(0, 80, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
 
-    /* "_drainage.pyx":89
+    /* "_drainage.pyx":61
  *   cdef int d,ii,jj,kk,oppDir,returnCell,found
  * 
  *   if _availDirection > 0:             # <<<<<<<<<<<<<<
@@ -3026,7 +3043,7 @@ static PyObject *__pyx_pf_9_drainage__getDirection3D(CYTHON_UNUSED PyObject *__p
     goto __pyx_L3;
   }
 
-  /* "_drainage.pyx":110
+  /* "_drainage.pyx":82
  *       self.nodeInfo[ID].availDirection -= 1
  *   else:
  *       returnCell = -1             # <<<<<<<<<<<<<<
@@ -3038,21 +3055,21 @@ static PyObject *__pyx_pf_9_drainage__getDirection3D(CYTHON_UNUSED PyObject *__p
   }
   __pyx_L3:;
 
-  /* "_drainage.pyx":112
+  /* "_drainage.pyx":84
  *       returnCell = -1
  * 
  *   return returnCell             # <<<<<<<<<<<<<<
  * 
- * # def _validDirection(self,c):
+ * 
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_returnCell); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 112, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_returnCell); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 84, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __pyx_r = __pyx_t_7;
   __pyx_t_7 = 0;
   goto __pyx_L0;
 
-  /* "_drainage.pyx":74
+  /* "_drainage.pyx":46
  * 
  * 
  * def _getDirection3D(self,             # <<<<<<<<<<<<<<
@@ -3084,7 +3101,7 @@ static PyObject *__pyx_pf_9_drainage__getDirection3D(CYTHON_UNUSED PyObject *__p
   return __pyx_r;
 }
 
-/* "_drainage.pyx":121
+/* "_drainage.pyx":87
  * 
  * 
  * def  _genNodeDirections(self,             # <<<<<<<<<<<<<<
@@ -3127,11 +3144,11 @@ static PyObject *__pyx_pw_9_drainage_3_genNodeDirections(PyObject *__pyx_self, P
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_ind)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("_genNodeDirections", 1, 2, 2, 1); __PYX_ERR(0, 121, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("_genNodeDirections", 1, 2, 2, 1); __PYX_ERR(0, 87, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "_genNodeDirections") < 0)) __PYX_ERR(0, 121, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "_genNodeDirections") < 0)) __PYX_ERR(0, 87, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -3144,13 +3161,13 @@ static PyObject *__pyx_pw_9_drainage_3_genNodeDirections(PyObject *__pyx_self, P
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("_genNodeDirections", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 121, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("_genNodeDirections", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 87, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("_drainage._genNodeDirections", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v__ind), __pyx_ptype_5numpy_ndarray, 1, "_ind", 0))) __PYX_ERR(0, 122, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v__ind), __pyx_ptype_5numpy_ndarray, 1, "_ind", 0))) __PYX_ERR(0, 88, __pyx_L1_error)
   __pyx_r = __pyx_pf_9_drainage_2_genNodeDirections(__pyx_self, __pyx_v_self, __pyx_v__ind);
 
   /* function exit code */
@@ -3172,35 +3189,40 @@ static PyObject *__pyx_pf_9_drainage_2_genNodeDirections(CYTHON_UNUSED PyObject 
   int __pyx_v_jj;
   int __pyx_v_kk;
   int __pyx_v_availDirection;
-  int __pyx_v_NX;
-  int __pyx_v_NY;
-  int __pyx_v_NZ;
+  PyObject *__pyx_v_fIndex = NULL;
+  PyObject *__pyx_v_iL = NULL;
+  PyObject *__pyx_v_jL = NULL;
+  PyObject *__pyx_v_kL = NULL;
   PyObject *__pyx_v_node = NULL;
+  PyObject *__pyx_v_innerID = NULL;
   __Pyx_LocalBuf_ND __pyx_pybuffernd__ind;
   __Pyx_Buffer __pyx_pybuffer__ind;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
-  long __pyx_t_1;
-  long __pyx_t_2;
-  int __pyx_t_3;
-  long __pyx_t_4;
-  long __pyx_t_5;
-  int __pyx_t_6;
-  long __pyx_t_7;
-  long __pyx_t_8;
-  int __pyx_t_9;
-  Py_ssize_t __pyx_t_10;
-  Py_ssize_t __pyx_t_11;
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  Py_ssize_t __pyx_t_3;
+  PyObject *(*__pyx_t_4)(PyObject *);
+  PyObject *__pyx_t_5 = NULL;
+  PyObject *__pyx_t_6 = NULL;
+  PyObject *__pyx_t_7 = NULL;
+  Py_ssize_t __pyx_t_8;
+  PyObject *(*__pyx_t_9)(PyObject *);
+  int __pyx_t_10;
+  PyObject *__pyx_t_11 = NULL;
   Py_ssize_t __pyx_t_12;
-  int __pyx_t_13;
-  int __pyx_t_14;
-  int __pyx_t_15;
-  int __pyx_t_16;
-  PyObject *__pyx_t_17 = NULL;
-  PyObject *__pyx_t_18 = NULL;
-  PyObject *__pyx_t_19 = NULL;
-  PyObject *__pyx_t_20 = NULL;
-  PyObject *__pyx_t_21 = NULL;
+  PyObject *(*__pyx_t_13)(PyObject *);
+  PyObject *__pyx_t_14 = NULL;
+  Py_ssize_t __pyx_t_15;
+  PyObject *(*__pyx_t_16)(PyObject *);
+  Py_ssize_t __pyx_t_17;
+  Py_ssize_t __pyx_t_18;
+  Py_ssize_t __pyx_t_19;
+  int __pyx_t_20;
+  int __pyx_t_21;
+  int __pyx_t_22;
+  PyObject *__pyx_t_23 = NULL;
+  PyObject *__pyx_t_24 = NULL;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -3211,315 +3233,1126 @@ static PyObject *__pyx_pf_9_drainage_2_genNodeDirections(CYTHON_UNUSED PyObject 
   __pyx_pybuffernd__ind.rcbuffer = &__pyx_pybuffer__ind;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd__ind.rcbuffer->pybuffer, (PyObject*)__pyx_v__ind, &__Pyx_TypeInfo_nn___pyx_t_5numpy_uint8_t, PyBUF_FORMAT| PyBUF_STRIDES, 3, 0, __pyx_stack) == -1)) __PYX_ERR(0, 121, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd__ind.rcbuffer->pybuffer, (PyObject*)__pyx_v__ind, &__Pyx_TypeInfo_nn___pyx_t_5numpy_uint8_t, PyBUF_FORMAT| PyBUF_STRIDES, 3, 0, __pyx_stack) == -1)) __PYX_ERR(0, 87, __pyx_L1_error)
   }
   __pyx_pybuffernd__ind.diminfo[0].strides = __pyx_pybuffernd__ind.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd__ind.diminfo[0].shape = __pyx_pybuffernd__ind.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd__ind.diminfo[1].strides = __pyx_pybuffernd__ind.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd__ind.diminfo[1].shape = __pyx_pybuffernd__ind.rcbuffer->pybuffer.shape[1]; __pyx_pybuffernd__ind.diminfo[2].strides = __pyx_pybuffernd__ind.rcbuffer->pybuffer.strides[2]; __pyx_pybuffernd__ind.diminfo[2].shape = __pyx_pybuffernd__ind.rcbuffer->pybuffer.shape[2];
 
-  /* "_drainage.pyx":126
+  /* "_drainage.pyx":92
  *   cdef int i,j,k,c,d,ii,jj,kk,availDirection
  * 
- *   cdef int NX = _ind.shape[0]             # <<<<<<<<<<<<<<
- *   cdef int NY = _ind.shape[1]
- *   cdef int NZ = _ind.shape[2]
- */
-  __pyx_v_NX = (__pyx_v__ind->dimensions[0]);
-
-  /* "_drainage.pyx":127
- * 
- *   cdef int NX = _ind.shape[0]
- *   cdef int NY = _ind.shape[1]             # <<<<<<<<<<<<<<
- *   cdef int NZ = _ind.shape[2]
- * 
- */
-  __pyx_v_NY = (__pyx_v__ind->dimensions[1]);
-
-  /* "_drainage.pyx":128
- *   cdef int NX = _ind.shape[0]
- *   cdef int NY = _ind.shape[1]
- *   cdef int NZ = _ind.shape[2]             # <<<<<<<<<<<<<<
- * 
- *   c = 0
- */
-  __pyx_v_NZ = (__pyx_v__ind->dimensions[2]);
-
-  /* "_drainage.pyx":130
- *   cdef int NZ = _ind.shape[2]
- * 
  *   c = 0             # <<<<<<<<<<<<<<
- *   for i in range(1,NX-1):
- *       for j in range(1,NY-1):
+ *   for fIndex in self.Orientation.faces:
+ *       iL = self.subDomain.loopInfo[fIndex][0]
  */
   __pyx_v_c = 0;
 
-  /* "_drainage.pyx":131
+  /* "_drainage.pyx":93
  * 
  *   c = 0
- *   for i in range(1,NX-1):             # <<<<<<<<<<<<<<
- *       for j in range(1,NY-1):
- *           for k in range(1,NZ-1):
+ *   for fIndex in self.Orientation.faces:             # <<<<<<<<<<<<<<
+ *       iL = self.subDomain.loopInfo[fIndex][0]
+ *       jL = self.subDomain.loopInfo[fIndex][1]
  */
-  __pyx_t_1 = (__pyx_v_NX - 1);
-  __pyx_t_2 = __pyx_t_1;
-  for (__pyx_t_3 = 1; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
-    __pyx_v_i = __pyx_t_3;
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_Orientation); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 93, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_faces); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 93, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  if (likely(PyList_CheckExact(__pyx_t_2)) || PyTuple_CheckExact(__pyx_t_2)) {
+    __pyx_t_1 = __pyx_t_2; __Pyx_INCREF(__pyx_t_1); __pyx_t_3 = 0;
+    __pyx_t_4 = NULL;
+  } else {
+    __pyx_t_3 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_t_4 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 93, __pyx_L1_error)
+  }
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  for (;;) {
+    if (likely(!__pyx_t_4)) {
+      if (likely(PyList_CheckExact(__pyx_t_1))) {
+        if (__pyx_t_3 >= PyList_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+        __pyx_t_2 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_3); __Pyx_INCREF(__pyx_t_2); __pyx_t_3++; if (unlikely(0 < 0)) __PYX_ERR(0, 93, __pyx_L1_error)
+        #else
+        __pyx_t_2 = PySequence_ITEM(__pyx_t_1, __pyx_t_3); __pyx_t_3++; if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 93, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_2);
+        #endif
+      } else {
+        if (__pyx_t_3 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+        __pyx_t_2 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_3); __Pyx_INCREF(__pyx_t_2); __pyx_t_3++; if (unlikely(0 < 0)) __PYX_ERR(0, 93, __pyx_L1_error)
+        #else
+        __pyx_t_2 = PySequence_ITEM(__pyx_t_1, __pyx_t_3); __pyx_t_3++; if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 93, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_2);
+        #endif
+      }
+    } else {
+      __pyx_t_2 = __pyx_t_4(__pyx_t_1);
+      if (unlikely(!__pyx_t_2)) {
+        PyObject* exc_type = PyErr_Occurred();
+        if (exc_type) {
+          if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+          else __PYX_ERR(0, 93, __pyx_L1_error)
+        }
+        break;
+      }
+      __Pyx_GOTREF(__pyx_t_2);
+    }
+    __Pyx_XDECREF_SET(__pyx_v_fIndex, __pyx_t_2);
+    __pyx_t_2 = 0;
 
-    /* "_drainage.pyx":132
+    /* "_drainage.pyx":94
  *   c = 0
- *   for i in range(1,NX-1):
- *       for j in range(1,NY-1):             # <<<<<<<<<<<<<<
- *           for k in range(1,NZ-1):
- *               if (_ind[i,j,k] == 1):
+ *   for fIndex in self.Orientation.faces:
+ *       iL = self.subDomain.loopInfo[fIndex][0]             # <<<<<<<<<<<<<<
+ *       jL = self.subDomain.loopInfo[fIndex][1]
+ *       kL = self.subDomain.loopInfo[fIndex][2]
  */
-    __pyx_t_4 = (__pyx_v_NY - 1);
-    __pyx_t_5 = __pyx_t_4;
-    for (__pyx_t_6 = 1; __pyx_t_6 < __pyx_t_5; __pyx_t_6+=1) {
-      __pyx_v_j = __pyx_t_6;
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_subDomain); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 94, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_loopInfo); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 94, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_5);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_2 = __Pyx_PyObject_GetItem(__pyx_t_5, __pyx_v_fIndex); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 94, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __pyx_t_5 = __Pyx_GetItemInt(__pyx_t_2, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 94, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_5);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF_SET(__pyx_v_iL, __pyx_t_5);
+    __pyx_t_5 = 0;
 
-      /* "_drainage.pyx":133
- *   for i in range(1,NX-1):
- *       for j in range(1,NY-1):
- *           for k in range(1,NZ-1):             # <<<<<<<<<<<<<<
- *               if (_ind[i,j,k] == 1):
- *                   availDirection = 0
+    /* "_drainage.pyx":95
+ *   for fIndex in self.Orientation.faces:
+ *       iL = self.subDomain.loopInfo[fIndex][0]
+ *       jL = self.subDomain.loopInfo[fIndex][1]             # <<<<<<<<<<<<<<
+ *       kL = self.subDomain.loopInfo[fIndex][2]
+ *       for i in range(iL[0],iL[1],iL[2]):
  */
-      __pyx_t_7 = (__pyx_v_NZ - 1);
-      __pyx_t_8 = __pyx_t_7;
-      for (__pyx_t_9 = 1; __pyx_t_9 < __pyx_t_8; __pyx_t_9+=1) {
-        __pyx_v_k = __pyx_t_9;
+    __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_subDomain); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 95, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_5);
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_loopInfo); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 95, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __pyx_t_5 = __Pyx_PyObject_GetItem(__pyx_t_2, __pyx_v_fIndex); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 95, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_5);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_2 = __Pyx_GetItemInt(__pyx_t_5, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 95, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF_SET(__pyx_v_jL, __pyx_t_2);
+    __pyx_t_2 = 0;
 
-        /* "_drainage.pyx":134
- *       for j in range(1,NY-1):
- *           for k in range(1,NZ-1):
- *               if (_ind[i,j,k] == 1):             # <<<<<<<<<<<<<<
- *                   availDirection = 0
- *                   for d in range(0,numDirections):
+    /* "_drainage.pyx":96
+ *       iL = self.subDomain.loopInfo[fIndex][0]
+ *       jL = self.subDomain.loopInfo[fIndex][1]
+ *       kL = self.subDomain.loopInfo[fIndex][2]             # <<<<<<<<<<<<<<
+ *       for i in range(iL[0],iL[1],iL[2]):
+ *           for j in range(jL[0],jL[1],jL[2]):
  */
-        __pyx_t_10 = __pyx_v_i;
-        __pyx_t_11 = __pyx_v_j;
-        __pyx_t_12 = __pyx_v_k;
-        __pyx_t_13 = (((*__Pyx_BufPtrStrided3d(__pyx_t_5numpy_uint8_t *, __pyx_pybuffernd__ind.rcbuffer->pybuffer.buf, __pyx_t_10, __pyx_pybuffernd__ind.diminfo[0].strides, __pyx_t_11, __pyx_pybuffernd__ind.diminfo[1].strides, __pyx_t_12, __pyx_pybuffernd__ind.diminfo[2].strides)) == 1) != 0);
-        if (__pyx_t_13) {
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_subDomain); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 96, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_loopInfo); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 96, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_5);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_2 = __Pyx_PyObject_GetItem(__pyx_t_5, __pyx_v_fIndex); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 96, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __pyx_t_5 = __Pyx_GetItemInt(__pyx_t_2, 2, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 96, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_5);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF_SET(__pyx_v_kL, __pyx_t_5);
+    __pyx_t_5 = 0;
 
-          /* "_drainage.pyx":135
- *           for k in range(1,NZ-1):
- *               if (_ind[i,j,k] == 1):
- *                   availDirection = 0             # <<<<<<<<<<<<<<
- *                   for d in range(0,numDirections):
- *                       ii = directions[d][0]
+    /* "_drainage.pyx":97
+ *       jL = self.subDomain.loopInfo[fIndex][1]
+ *       kL = self.subDomain.loopInfo[fIndex][2]
+ *       for i in range(iL[0],iL[1],iL[2]):             # <<<<<<<<<<<<<<
+ *           for j in range(jL[0],jL[1],jL[2]):
+ *               for k in range(kL[0],kL[1],kL[2]):
+ */
+    __pyx_t_5 = __Pyx_GetItemInt(__pyx_v_iL, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 97, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_5);
+    __pyx_t_2 = __Pyx_GetItemInt(__pyx_v_iL, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 97, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_6 = __Pyx_GetItemInt(__pyx_v_iL, 2, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 97, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_6);
+    __pyx_t_7 = PyTuple_New(3); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 97, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_7);
+    __Pyx_GIVEREF(__pyx_t_5);
+    PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_5);
+    __Pyx_GIVEREF(__pyx_t_2);
+    PyTuple_SET_ITEM(__pyx_t_7, 1, __pyx_t_2);
+    __Pyx_GIVEREF(__pyx_t_6);
+    PyTuple_SET_ITEM(__pyx_t_7, 2, __pyx_t_6);
+    __pyx_t_5 = 0;
+    __pyx_t_2 = 0;
+    __pyx_t_6 = 0;
+    __pyx_t_6 = __Pyx_PyObject_Call(__pyx_builtin_range, __pyx_t_7, NULL); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 97, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_6);
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+    if (likely(PyList_CheckExact(__pyx_t_6)) || PyTuple_CheckExact(__pyx_t_6)) {
+      __pyx_t_7 = __pyx_t_6; __Pyx_INCREF(__pyx_t_7); __pyx_t_8 = 0;
+      __pyx_t_9 = NULL;
+    } else {
+      __pyx_t_8 = -1; __pyx_t_7 = PyObject_GetIter(__pyx_t_6); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 97, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_7);
+      __pyx_t_9 = Py_TYPE(__pyx_t_7)->tp_iternext; if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 97, __pyx_L1_error)
+    }
+    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+    for (;;) {
+      if (likely(!__pyx_t_9)) {
+        if (likely(PyList_CheckExact(__pyx_t_7))) {
+          if (__pyx_t_8 >= PyList_GET_SIZE(__pyx_t_7)) break;
+          #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+          __pyx_t_6 = PyList_GET_ITEM(__pyx_t_7, __pyx_t_8); __Pyx_INCREF(__pyx_t_6); __pyx_t_8++; if (unlikely(0 < 0)) __PYX_ERR(0, 97, __pyx_L1_error)
+          #else
+          __pyx_t_6 = PySequence_ITEM(__pyx_t_7, __pyx_t_8); __pyx_t_8++; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 97, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_6);
+          #endif
+        } else {
+          if (__pyx_t_8 >= PyTuple_GET_SIZE(__pyx_t_7)) break;
+          #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+          __pyx_t_6 = PyTuple_GET_ITEM(__pyx_t_7, __pyx_t_8); __Pyx_INCREF(__pyx_t_6); __pyx_t_8++; if (unlikely(0 < 0)) __PYX_ERR(0, 97, __pyx_L1_error)
+          #else
+          __pyx_t_6 = PySequence_ITEM(__pyx_t_7, __pyx_t_8); __pyx_t_8++; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 97, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_6);
+          #endif
+        }
+      } else {
+        __pyx_t_6 = __pyx_t_9(__pyx_t_7);
+        if (unlikely(!__pyx_t_6)) {
+          PyObject* exc_type = PyErr_Occurred();
+          if (exc_type) {
+            if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+            else __PYX_ERR(0, 97, __pyx_L1_error)
+          }
+          break;
+        }
+        __Pyx_GOTREF(__pyx_t_6);
+      }
+      __pyx_t_10 = __Pyx_PyInt_As_int(__pyx_t_6); if (unlikely((__pyx_t_10 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 97, __pyx_L1_error)
+      __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+      __pyx_v_i = __pyx_t_10;
+
+      /* "_drainage.pyx":98
+ *       kL = self.subDomain.loopInfo[fIndex][2]
+ *       for i in range(iL[0],iL[1],iL[2]):
+ *           for j in range(jL[0],jL[1],jL[2]):             # <<<<<<<<<<<<<<
+ *               for k in range(kL[0],kL[1],kL[2]):
+ *                   if _ind[i+1,j+1,k+1] == 1:
+ */
+      __pyx_t_6 = __Pyx_GetItemInt(__pyx_v_jL, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 98, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_6);
+      __pyx_t_2 = __Pyx_GetItemInt(__pyx_v_jL, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 98, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_2);
+      __pyx_t_5 = __Pyx_GetItemInt(__pyx_v_jL, 2, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 98, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_5);
+      __pyx_t_11 = PyTuple_New(3); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 98, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_11);
+      __Pyx_GIVEREF(__pyx_t_6);
+      PyTuple_SET_ITEM(__pyx_t_11, 0, __pyx_t_6);
+      __Pyx_GIVEREF(__pyx_t_2);
+      PyTuple_SET_ITEM(__pyx_t_11, 1, __pyx_t_2);
+      __Pyx_GIVEREF(__pyx_t_5);
+      PyTuple_SET_ITEM(__pyx_t_11, 2, __pyx_t_5);
+      __pyx_t_6 = 0;
+      __pyx_t_2 = 0;
+      __pyx_t_5 = 0;
+      __pyx_t_5 = __Pyx_PyObject_Call(__pyx_builtin_range, __pyx_t_11, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 98, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_5);
+      __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
+      if (likely(PyList_CheckExact(__pyx_t_5)) || PyTuple_CheckExact(__pyx_t_5)) {
+        __pyx_t_11 = __pyx_t_5; __Pyx_INCREF(__pyx_t_11); __pyx_t_12 = 0;
+        __pyx_t_13 = NULL;
+      } else {
+        __pyx_t_12 = -1; __pyx_t_11 = PyObject_GetIter(__pyx_t_5); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 98, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_11);
+        __pyx_t_13 = Py_TYPE(__pyx_t_11)->tp_iternext; if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 98, __pyx_L1_error)
+      }
+      __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+      for (;;) {
+        if (likely(!__pyx_t_13)) {
+          if (likely(PyList_CheckExact(__pyx_t_11))) {
+            if (__pyx_t_12 >= PyList_GET_SIZE(__pyx_t_11)) break;
+            #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+            __pyx_t_5 = PyList_GET_ITEM(__pyx_t_11, __pyx_t_12); __Pyx_INCREF(__pyx_t_5); __pyx_t_12++; if (unlikely(0 < 0)) __PYX_ERR(0, 98, __pyx_L1_error)
+            #else
+            __pyx_t_5 = PySequence_ITEM(__pyx_t_11, __pyx_t_12); __pyx_t_12++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 98, __pyx_L1_error)
+            __Pyx_GOTREF(__pyx_t_5);
+            #endif
+          } else {
+            if (__pyx_t_12 >= PyTuple_GET_SIZE(__pyx_t_11)) break;
+            #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+            __pyx_t_5 = PyTuple_GET_ITEM(__pyx_t_11, __pyx_t_12); __Pyx_INCREF(__pyx_t_5); __pyx_t_12++; if (unlikely(0 < 0)) __PYX_ERR(0, 98, __pyx_L1_error)
+            #else
+            __pyx_t_5 = PySequence_ITEM(__pyx_t_11, __pyx_t_12); __pyx_t_12++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 98, __pyx_L1_error)
+            __Pyx_GOTREF(__pyx_t_5);
+            #endif
+          }
+        } else {
+          __pyx_t_5 = __pyx_t_13(__pyx_t_11);
+          if (unlikely(!__pyx_t_5)) {
+            PyObject* exc_type = PyErr_Occurred();
+            if (exc_type) {
+              if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+              else __PYX_ERR(0, 98, __pyx_L1_error)
+            }
+            break;
+          }
+          __Pyx_GOTREF(__pyx_t_5);
+        }
+        __pyx_t_10 = __Pyx_PyInt_As_int(__pyx_t_5); if (unlikely((__pyx_t_10 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 98, __pyx_L1_error)
+        __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+        __pyx_v_j = __pyx_t_10;
+
+        /* "_drainage.pyx":99
+ *       for i in range(iL[0],iL[1],iL[2]):
+ *           for j in range(jL[0],jL[1],jL[2]):
+ *               for k in range(kL[0],kL[1],kL[2]):             # <<<<<<<<<<<<<<
+ *                   if _ind[i+1,j+1,k+1] == 1:
+ *                     availDirection = 0
+ */
+        __pyx_t_5 = __Pyx_GetItemInt(__pyx_v_kL, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 99, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_5);
+        __pyx_t_2 = __Pyx_GetItemInt(__pyx_v_kL, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 99, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_2);
+        __pyx_t_6 = __Pyx_GetItemInt(__pyx_v_kL, 2, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 99, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_6);
+        __pyx_t_14 = PyTuple_New(3); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 99, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_14);
+        __Pyx_GIVEREF(__pyx_t_5);
+        PyTuple_SET_ITEM(__pyx_t_14, 0, __pyx_t_5);
+        __Pyx_GIVEREF(__pyx_t_2);
+        PyTuple_SET_ITEM(__pyx_t_14, 1, __pyx_t_2);
+        __Pyx_GIVEREF(__pyx_t_6);
+        PyTuple_SET_ITEM(__pyx_t_14, 2, __pyx_t_6);
+        __pyx_t_5 = 0;
+        __pyx_t_2 = 0;
+        __pyx_t_6 = 0;
+        __pyx_t_6 = __Pyx_PyObject_Call(__pyx_builtin_range, __pyx_t_14, NULL); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 99, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_6);
+        __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
+        if (likely(PyList_CheckExact(__pyx_t_6)) || PyTuple_CheckExact(__pyx_t_6)) {
+          __pyx_t_14 = __pyx_t_6; __Pyx_INCREF(__pyx_t_14); __pyx_t_15 = 0;
+          __pyx_t_16 = NULL;
+        } else {
+          __pyx_t_15 = -1; __pyx_t_14 = PyObject_GetIter(__pyx_t_6); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 99, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_14);
+          __pyx_t_16 = Py_TYPE(__pyx_t_14)->tp_iternext; if (unlikely(!__pyx_t_16)) __PYX_ERR(0, 99, __pyx_L1_error)
+        }
+        __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+        for (;;) {
+          if (likely(!__pyx_t_16)) {
+            if (likely(PyList_CheckExact(__pyx_t_14))) {
+              if (__pyx_t_15 >= PyList_GET_SIZE(__pyx_t_14)) break;
+              #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+              __pyx_t_6 = PyList_GET_ITEM(__pyx_t_14, __pyx_t_15); __Pyx_INCREF(__pyx_t_6); __pyx_t_15++; if (unlikely(0 < 0)) __PYX_ERR(0, 99, __pyx_L1_error)
+              #else
+              __pyx_t_6 = PySequence_ITEM(__pyx_t_14, __pyx_t_15); __pyx_t_15++; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 99, __pyx_L1_error)
+              __Pyx_GOTREF(__pyx_t_6);
+              #endif
+            } else {
+              if (__pyx_t_15 >= PyTuple_GET_SIZE(__pyx_t_14)) break;
+              #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+              __pyx_t_6 = PyTuple_GET_ITEM(__pyx_t_14, __pyx_t_15); __Pyx_INCREF(__pyx_t_6); __pyx_t_15++; if (unlikely(0 < 0)) __PYX_ERR(0, 99, __pyx_L1_error)
+              #else
+              __pyx_t_6 = PySequence_ITEM(__pyx_t_14, __pyx_t_15); __pyx_t_15++; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 99, __pyx_L1_error)
+              __Pyx_GOTREF(__pyx_t_6);
+              #endif
+            }
+          } else {
+            __pyx_t_6 = __pyx_t_16(__pyx_t_14);
+            if (unlikely(!__pyx_t_6)) {
+              PyObject* exc_type = PyErr_Occurred();
+              if (exc_type) {
+                if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+                else __PYX_ERR(0, 99, __pyx_L1_error)
+              }
+              break;
+            }
+            __Pyx_GOTREF(__pyx_t_6);
+          }
+          __pyx_t_10 = __Pyx_PyInt_As_int(__pyx_t_6); if (unlikely((__pyx_t_10 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 99, __pyx_L1_error)
+          __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+          __pyx_v_k = __pyx_t_10;
+
+          /* "_drainage.pyx":100
+ *           for j in range(jL[0],jL[1],jL[2]):
+ *               for k in range(kL[0],kL[1],kL[2]):
+ *                   if _ind[i+1,j+1,k+1] == 1:             # <<<<<<<<<<<<<<
+ *                     availDirection = 0
+ *                     for d in range(0,numDirections):
+ */
+          __pyx_t_17 = (__pyx_v_i + 1);
+          __pyx_t_18 = (__pyx_v_j + 1);
+          __pyx_t_19 = (__pyx_v_k + 1);
+          __pyx_t_20 = (((*__Pyx_BufPtrStrided3d(__pyx_t_5numpy_uint8_t *, __pyx_pybuffernd__ind.rcbuffer->pybuffer.buf, __pyx_t_17, __pyx_pybuffernd__ind.diminfo[0].strides, __pyx_t_18, __pyx_pybuffernd__ind.diminfo[1].strides, __pyx_t_19, __pyx_pybuffernd__ind.diminfo[2].strides)) == 1) != 0);
+          if (__pyx_t_20) {
+
+            /* "_drainage.pyx":101
+ *               for k in range(kL[0],kL[1],kL[2]):
+ *                   if _ind[i+1,j+1,k+1] == 1:
+ *                     availDirection = 0             # <<<<<<<<<<<<<<
+ *                     for d in range(0,numDirections):
+ *                         ii = directions[d][0] + 1
+ */
+            __pyx_v_availDirection = 0;
+
+            /* "_drainage.pyx":102
+ *                   if _ind[i+1,j+1,k+1] == 1:
+ *                     availDirection = 0
+ *                     for d in range(0,numDirections):             # <<<<<<<<<<<<<<
+ *                         ii = directions[d][0] + 1
+ *                         jj = directions[d][1] + 1
+ */
+            __pyx_t_10 = __pyx_v_9_drainage_numDirections;
+            __pyx_t_21 = __pyx_t_10;
+            for (__pyx_t_22 = 0; __pyx_t_22 < __pyx_t_21; __pyx_t_22+=1) {
+              __pyx_v_d = __pyx_t_22;
+
+              /* "_drainage.pyx":103
+ *                     availDirection = 0
+ *                     for d in range(0,numDirections):
+ *                         ii = directions[d][0] + 1             # <<<<<<<<<<<<<<
+ *                         jj = directions[d][1] + 1
+ *                         kk = directions[d][2] + 1
+ */
+              if (unlikely(!__pyx_v_9_drainage_directions.memview)) { __Pyx_RaiseUnboundLocalError("directions"); __PYX_ERR(0, 103, __pyx_L1_error) }
+              __pyx_t_19 = __pyx_v_d;
+              __pyx_t_18 = 0;
+              __pyx_v_ii = ((*((__pyx_t_5numpy_int8_t *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_9_drainage_directions.data + __pyx_t_19 * __pyx_v_9_drainage_directions.strides[0]) ) + __pyx_t_18 * __pyx_v_9_drainage_directions.strides[1]) ))) + 1);
+
+              /* "_drainage.pyx":104
+ *                     for d in range(0,numDirections):
+ *                         ii = directions[d][0] + 1
+ *                         jj = directions[d][1] + 1             # <<<<<<<<<<<<<<
+ *                         kk = directions[d][2] + 1
+ *                         if (_ind[i+ii,j+jj,k+kk] == 1):
+ */
+              if (unlikely(!__pyx_v_9_drainage_directions.memview)) { __Pyx_RaiseUnboundLocalError("directions"); __PYX_ERR(0, 104, __pyx_L1_error) }
+              __pyx_t_18 = __pyx_v_d;
+              __pyx_t_19 = 1;
+              __pyx_v_jj = ((*((__pyx_t_5numpy_int8_t *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_9_drainage_directions.data + __pyx_t_18 * __pyx_v_9_drainage_directions.strides[0]) ) + __pyx_t_19 * __pyx_v_9_drainage_directions.strides[1]) ))) + 1);
+
+              /* "_drainage.pyx":105
+ *                         ii = directions[d][0] + 1
+ *                         jj = directions[d][1] + 1
+ *                         kk = directions[d][2] + 1             # <<<<<<<<<<<<<<
+ *                         if (_ind[i+ii,j+jj,k+kk] == 1):
+ *                             self.nodeInfo[c].direction[d] = 1
+ */
+              if (unlikely(!__pyx_v_9_drainage_directions.memview)) { __Pyx_RaiseUnboundLocalError("directions"); __PYX_ERR(0, 105, __pyx_L1_error) }
+              __pyx_t_19 = __pyx_v_d;
+              __pyx_t_18 = 2;
+              __pyx_v_kk = ((*((__pyx_t_5numpy_int8_t *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_9_drainage_directions.data + __pyx_t_19 * __pyx_v_9_drainage_directions.strides[0]) ) + __pyx_t_18 * __pyx_v_9_drainage_directions.strides[1]) ))) + 1);
+
+              /* "_drainage.pyx":106
+ *                         jj = directions[d][1] + 1
+ *                         kk = directions[d][2] + 1
+ *                         if (_ind[i+ii,j+jj,k+kk] == 1):             # <<<<<<<<<<<<<<
+ *                             self.nodeInfo[c].direction[d] = 1
+ *                             node = self.nodeTable[i+ii-1,j+jj-1,k+kk-1]
+ */
+              __pyx_t_18 = (__pyx_v_i + __pyx_v_ii);
+              __pyx_t_19 = (__pyx_v_j + __pyx_v_jj);
+              __pyx_t_17 = (__pyx_v_k + __pyx_v_kk);
+              __pyx_t_20 = (((*__Pyx_BufPtrStrided3d(__pyx_t_5numpy_uint8_t *, __pyx_pybuffernd__ind.rcbuffer->pybuffer.buf, __pyx_t_18, __pyx_pybuffernd__ind.diminfo[0].strides, __pyx_t_19, __pyx_pybuffernd__ind.diminfo[1].strides, __pyx_t_17, __pyx_pybuffernd__ind.diminfo[2].strides)) == 1) != 0);
+              if (__pyx_t_20) {
+
+                /* "_drainage.pyx":107
+ *                         kk = directions[d][2] + 1
+ *                         if (_ind[i+ii,j+jj,k+kk] == 1):
+ *                             self.nodeInfo[c].direction[d] = 1             # <<<<<<<<<<<<<<
+ *                             node = self.nodeTable[i+ii-1,j+jj-1,k+kk-1]
+ *                             self.nodeInfo[c].nodeDirection[d] = node
+ */
+                __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeInfo); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 107, __pyx_L1_error)
+                __Pyx_GOTREF(__pyx_t_6);
+                __pyx_t_2 = __Pyx_GetItemInt(__pyx_t_6, __pyx_v_c, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 107, __pyx_L1_error)
+                __Pyx_GOTREF(__pyx_t_2);
+                __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+                __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_direction_2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 107, __pyx_L1_error)
+                __Pyx_GOTREF(__pyx_t_6);
+                __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+                if (unlikely(__Pyx_SetItemInt(__pyx_t_6, __pyx_v_d, __pyx_int_1, int, 1, __Pyx_PyInt_From_int, 0, 0, 0) < 0)) __PYX_ERR(0, 107, __pyx_L1_error)
+                __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+
+                /* "_drainage.pyx":108
+ *                         if (_ind[i+ii,j+jj,k+kk] == 1):
+ *                             self.nodeInfo[c].direction[d] = 1
+ *                             node = self.nodeTable[i+ii-1,j+jj-1,k+kk-1]             # <<<<<<<<<<<<<<
+ *                             self.nodeInfo[c].nodeDirection[d] = node
+ *                             availDirection += 1
+ */
+                __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeTable); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 108, __pyx_L1_error)
+                __Pyx_GOTREF(__pyx_t_6);
+                __pyx_t_2 = __Pyx_PyInt_From_long(((__pyx_v_i + __pyx_v_ii) - 1)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 108, __pyx_L1_error)
+                __Pyx_GOTREF(__pyx_t_2);
+                __pyx_t_5 = __Pyx_PyInt_From_long(((__pyx_v_j + __pyx_v_jj) - 1)); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 108, __pyx_L1_error)
+                __Pyx_GOTREF(__pyx_t_5);
+                __pyx_t_23 = __Pyx_PyInt_From_long(((__pyx_v_k + __pyx_v_kk) - 1)); if (unlikely(!__pyx_t_23)) __PYX_ERR(0, 108, __pyx_L1_error)
+                __Pyx_GOTREF(__pyx_t_23);
+                __pyx_t_24 = PyTuple_New(3); if (unlikely(!__pyx_t_24)) __PYX_ERR(0, 108, __pyx_L1_error)
+                __Pyx_GOTREF(__pyx_t_24);
+                __Pyx_GIVEREF(__pyx_t_2);
+                PyTuple_SET_ITEM(__pyx_t_24, 0, __pyx_t_2);
+                __Pyx_GIVEREF(__pyx_t_5);
+                PyTuple_SET_ITEM(__pyx_t_24, 1, __pyx_t_5);
+                __Pyx_GIVEREF(__pyx_t_23);
+                PyTuple_SET_ITEM(__pyx_t_24, 2, __pyx_t_23);
+                __pyx_t_2 = 0;
+                __pyx_t_5 = 0;
+                __pyx_t_23 = 0;
+                __pyx_t_23 = __Pyx_PyObject_GetItem(__pyx_t_6, __pyx_t_24); if (unlikely(!__pyx_t_23)) __PYX_ERR(0, 108, __pyx_L1_error)
+                __Pyx_GOTREF(__pyx_t_23);
+                __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+                __Pyx_DECREF(__pyx_t_24); __pyx_t_24 = 0;
+                __Pyx_XDECREF_SET(__pyx_v_node, __pyx_t_23);
+                __pyx_t_23 = 0;
+
+                /* "_drainage.pyx":109
+ *                             self.nodeInfo[c].direction[d] = 1
+ *                             node = self.nodeTable[i+ii-1,j+jj-1,k+kk-1]
+ *                             self.nodeInfo[c].nodeDirection[d] = node             # <<<<<<<<<<<<<<
+ *                             availDirection += 1
+ * 
+ */
+                __pyx_t_23 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeInfo); if (unlikely(!__pyx_t_23)) __PYX_ERR(0, 109, __pyx_L1_error)
+                __Pyx_GOTREF(__pyx_t_23);
+                __pyx_t_24 = __Pyx_GetItemInt(__pyx_t_23, __pyx_v_c, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_24)) __PYX_ERR(0, 109, __pyx_L1_error)
+                __Pyx_GOTREF(__pyx_t_24);
+                __Pyx_DECREF(__pyx_t_23); __pyx_t_23 = 0;
+                __pyx_t_23 = __Pyx_PyObject_GetAttrStr(__pyx_t_24, __pyx_n_s_nodeDirection); if (unlikely(!__pyx_t_23)) __PYX_ERR(0, 109, __pyx_L1_error)
+                __Pyx_GOTREF(__pyx_t_23);
+                __Pyx_DECREF(__pyx_t_24); __pyx_t_24 = 0;
+                if (unlikely(__Pyx_SetItemInt(__pyx_t_23, __pyx_v_d, __pyx_v_node, int, 1, __Pyx_PyInt_From_int, 0, 0, 0) < 0)) __PYX_ERR(0, 109, __pyx_L1_error)
+                __Pyx_DECREF(__pyx_t_23); __pyx_t_23 = 0;
+
+                /* "_drainage.pyx":110
+ *                             node = self.nodeTable[i+ii-1,j+jj-1,k+kk-1]
+ *                             self.nodeInfo[c].nodeDirection[d] = node
+ *                             availDirection += 1             # <<<<<<<<<<<<<<
+ * 
+ *                     self.nodeInfo[c].availDirection = availDirection
+ */
+                __pyx_v_availDirection = (__pyx_v_availDirection + 1);
+
+                /* "_drainage.pyx":106
+ *                         jj = directions[d][1] + 1
+ *                         kk = directions[d][2] + 1
+ *                         if (_ind[i+ii,j+jj,k+kk] == 1):             # <<<<<<<<<<<<<<
+ *                             self.nodeInfo[c].direction[d] = 1
+ *                             node = self.nodeTable[i+ii-1,j+jj-1,k+kk-1]
+ */
+              }
+            }
+
+            /* "_drainage.pyx":112
+ *                             availDirection += 1
+ * 
+ *                     self.nodeInfo[c].availDirection = availDirection             # <<<<<<<<<<<<<<
+ *                     c = c + 1
+ * 
+ */
+            __pyx_t_23 = __Pyx_PyInt_From_int(__pyx_v_availDirection); if (unlikely(!__pyx_t_23)) __PYX_ERR(0, 112, __pyx_L1_error)
+            __Pyx_GOTREF(__pyx_t_23);
+            __pyx_t_24 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeInfo); if (unlikely(!__pyx_t_24)) __PYX_ERR(0, 112, __pyx_L1_error)
+            __Pyx_GOTREF(__pyx_t_24);
+            __pyx_t_6 = __Pyx_GetItemInt(__pyx_t_24, __pyx_v_c, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 112, __pyx_L1_error)
+            __Pyx_GOTREF(__pyx_t_6);
+            __Pyx_DECREF(__pyx_t_24); __pyx_t_24 = 0;
+            if (__Pyx_PyObject_SetAttrStr(__pyx_t_6, __pyx_n_s_availDirection_2, __pyx_t_23) < 0) __PYX_ERR(0, 112, __pyx_L1_error)
+            __Pyx_DECREF(__pyx_t_23); __pyx_t_23 = 0;
+            __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+
+            /* "_drainage.pyx":113
+ * 
+ *                     self.nodeInfo[c].availDirection = availDirection
+ *                     c = c + 1             # <<<<<<<<<<<<<<
+ * 
+ *   innerID = self.Orientation.numFaces
+ */
+            __pyx_v_c = (__pyx_v_c + 1);
+
+            /* "_drainage.pyx":100
+ *           for j in range(jL[0],jL[1],jL[2]):
+ *               for k in range(kL[0],kL[1],kL[2]):
+ *                   if _ind[i+1,j+1,k+1] == 1:             # <<<<<<<<<<<<<<
+ *                     availDirection = 0
+ *                     for d in range(0,numDirections):
+ */
+          }
+
+          /* "_drainage.pyx":99
+ *       for i in range(iL[0],iL[1],iL[2]):
+ *           for j in range(jL[0],jL[1],jL[2]):
+ *               for k in range(kL[0],kL[1],kL[2]):             # <<<<<<<<<<<<<<
+ *                   if _ind[i+1,j+1,k+1] == 1:
+ *                     availDirection = 0
+ */
+        }
+        __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
+
+        /* "_drainage.pyx":98
+ *       kL = self.subDomain.loopInfo[fIndex][2]
+ *       for i in range(iL[0],iL[1],iL[2]):
+ *           for j in range(jL[0],jL[1],jL[2]):             # <<<<<<<<<<<<<<
+ *               for k in range(kL[0],kL[1],kL[2]):
+ *                   if _ind[i+1,j+1,k+1] == 1:
+ */
+      }
+      __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
+
+      /* "_drainage.pyx":97
+ *       jL = self.subDomain.loopInfo[fIndex][1]
+ *       kL = self.subDomain.loopInfo[fIndex][2]
+ *       for i in range(iL[0],iL[1],iL[2]):             # <<<<<<<<<<<<<<
+ *           for j in range(jL[0],jL[1],jL[2]):
+ *               for k in range(kL[0],kL[1],kL[2]):
+ */
+    }
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+
+    /* "_drainage.pyx":93
+ * 
+ *   c = 0
+ *   for fIndex in self.Orientation.faces:             # <<<<<<<<<<<<<<
+ *       iL = self.subDomain.loopInfo[fIndex][0]
+ *       jL = self.subDomain.loopInfo[fIndex][1]
+ */
+  }
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "_drainage.pyx":115
+ *                     c = c + 1
+ * 
+ *   innerID = self.Orientation.numFaces             # <<<<<<<<<<<<<<
+ *   iL = self.subDomain.loopInfo[innerID][0]
+ *   jL = self.subDomain.loopInfo[innerID][1]
+ */
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_Orientation); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 115, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_numFaces); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 115, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_innerID = __pyx_t_7;
+  __pyx_t_7 = 0;
+
+  /* "_drainage.pyx":116
+ * 
+ *   innerID = self.Orientation.numFaces
+ *   iL = self.subDomain.loopInfo[innerID][0]             # <<<<<<<<<<<<<<
+ *   jL = self.subDomain.loopInfo[innerID][1]
+ *   kL = self.subDomain.loopInfo[innerID][2]
+ */
+  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_subDomain); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 116, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_n_s_loopInfo); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 116, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  __pyx_t_7 = __Pyx_PyObject_GetItem(__pyx_t_1, __pyx_v_innerID); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 116, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_GetItemInt(__pyx_t_7, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 116, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  __Pyx_XDECREF_SET(__pyx_v_iL, __pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* "_drainage.pyx":117
+ *   innerID = self.Orientation.numFaces
+ *   iL = self.subDomain.loopInfo[innerID][0]
+ *   jL = self.subDomain.loopInfo[innerID][1]             # <<<<<<<<<<<<<<
+ *   kL = self.subDomain.loopInfo[innerID][2]
+ *   for i in range(iL[0],iL[1],iL[2]):
+ */
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_subDomain); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 117, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_loopInfo); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 117, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_PyObject_GetItem(__pyx_t_7, __pyx_v_innerID); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 117, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  __pyx_t_7 = __Pyx_GetItemInt(__pyx_t_1, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 117, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __Pyx_XDECREF_SET(__pyx_v_jL, __pyx_t_7);
+  __pyx_t_7 = 0;
+
+  /* "_drainage.pyx":118
+ *   iL = self.subDomain.loopInfo[innerID][0]
+ *   jL = self.subDomain.loopInfo[innerID][1]
+ *   kL = self.subDomain.loopInfo[innerID][2]             # <<<<<<<<<<<<<<
+ *   for i in range(iL[0],iL[1],iL[2]):
+ *       for j in range(jL[0],jL[1],jL[2]):
+ */
+  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_subDomain); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 118, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_n_s_loopInfo); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 118, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  __pyx_t_7 = __Pyx_PyObject_GetItem(__pyx_t_1, __pyx_v_innerID); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 118, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_GetItemInt(__pyx_t_7, 2, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 118, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  __Pyx_XDECREF_SET(__pyx_v_kL, __pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* "_drainage.pyx":119
+ *   jL = self.subDomain.loopInfo[innerID][1]
+ *   kL = self.subDomain.loopInfo[innerID][2]
+ *   for i in range(iL[0],iL[1],iL[2]):             # <<<<<<<<<<<<<<
+ *       for j in range(jL[0],jL[1],jL[2]):
+ *           for k in range(kL[0],kL[1],kL[2]):
+ */
+  __pyx_t_1 = __Pyx_GetItemInt(__pyx_v_iL, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 119, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_7 = __Pyx_GetItemInt(__pyx_v_iL, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 119, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __pyx_t_11 = __Pyx_GetItemInt(__pyx_v_iL, 2, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 119, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_11);
+  __pyx_t_14 = PyTuple_New(3); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 119, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_14);
+  __Pyx_GIVEREF(__pyx_t_1);
+  PyTuple_SET_ITEM(__pyx_t_14, 0, __pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_7);
+  PyTuple_SET_ITEM(__pyx_t_14, 1, __pyx_t_7);
+  __Pyx_GIVEREF(__pyx_t_11);
+  PyTuple_SET_ITEM(__pyx_t_14, 2, __pyx_t_11);
+  __pyx_t_1 = 0;
+  __pyx_t_7 = 0;
+  __pyx_t_11 = 0;
+  __pyx_t_11 = __Pyx_PyObject_Call(__pyx_builtin_range, __pyx_t_14, NULL); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 119, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_11);
+  __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
+  if (likely(PyList_CheckExact(__pyx_t_11)) || PyTuple_CheckExact(__pyx_t_11)) {
+    __pyx_t_14 = __pyx_t_11; __Pyx_INCREF(__pyx_t_14); __pyx_t_3 = 0;
+    __pyx_t_4 = NULL;
+  } else {
+    __pyx_t_3 = -1; __pyx_t_14 = PyObject_GetIter(__pyx_t_11); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 119, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_14);
+    __pyx_t_4 = Py_TYPE(__pyx_t_14)->tp_iternext; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 119, __pyx_L1_error)
+  }
+  __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
+  for (;;) {
+    if (likely(!__pyx_t_4)) {
+      if (likely(PyList_CheckExact(__pyx_t_14))) {
+        if (__pyx_t_3 >= PyList_GET_SIZE(__pyx_t_14)) break;
+        #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+        __pyx_t_11 = PyList_GET_ITEM(__pyx_t_14, __pyx_t_3); __Pyx_INCREF(__pyx_t_11); __pyx_t_3++; if (unlikely(0 < 0)) __PYX_ERR(0, 119, __pyx_L1_error)
+        #else
+        __pyx_t_11 = PySequence_ITEM(__pyx_t_14, __pyx_t_3); __pyx_t_3++; if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 119, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_11);
+        #endif
+      } else {
+        if (__pyx_t_3 >= PyTuple_GET_SIZE(__pyx_t_14)) break;
+        #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+        __pyx_t_11 = PyTuple_GET_ITEM(__pyx_t_14, __pyx_t_3); __Pyx_INCREF(__pyx_t_11); __pyx_t_3++; if (unlikely(0 < 0)) __PYX_ERR(0, 119, __pyx_L1_error)
+        #else
+        __pyx_t_11 = PySequence_ITEM(__pyx_t_14, __pyx_t_3); __pyx_t_3++; if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 119, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_11);
+        #endif
+      }
+    } else {
+      __pyx_t_11 = __pyx_t_4(__pyx_t_14);
+      if (unlikely(!__pyx_t_11)) {
+        PyObject* exc_type = PyErr_Occurred();
+        if (exc_type) {
+          if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+          else __PYX_ERR(0, 119, __pyx_L1_error)
+        }
+        break;
+      }
+      __Pyx_GOTREF(__pyx_t_11);
+    }
+    __pyx_t_10 = __Pyx_PyInt_As_int(__pyx_t_11); if (unlikely((__pyx_t_10 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 119, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
+    __pyx_v_i = __pyx_t_10;
+
+    /* "_drainage.pyx":120
+ *   kL = self.subDomain.loopInfo[innerID][2]
+ *   for i in range(iL[0],iL[1],iL[2]):
+ *       for j in range(jL[0],jL[1],jL[2]):             # <<<<<<<<<<<<<<
+ *           for k in range(kL[0],kL[1],kL[2]):
+ *             if _ind[i+1,j+1,k+1] == 1:
+ */
+    __pyx_t_11 = __Pyx_GetItemInt(__pyx_v_jL, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 120, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_11);
+    __pyx_t_7 = __Pyx_GetItemInt(__pyx_v_jL, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 120, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_7);
+    __pyx_t_1 = __Pyx_GetItemInt(__pyx_v_jL, 2, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 120, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_t_6 = PyTuple_New(3); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 120, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_6);
+    __Pyx_GIVEREF(__pyx_t_11);
+    PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_t_11);
+    __Pyx_GIVEREF(__pyx_t_7);
+    PyTuple_SET_ITEM(__pyx_t_6, 1, __pyx_t_7);
+    __Pyx_GIVEREF(__pyx_t_1);
+    PyTuple_SET_ITEM(__pyx_t_6, 2, __pyx_t_1);
+    __pyx_t_11 = 0;
+    __pyx_t_7 = 0;
+    __pyx_t_1 = 0;
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_range, __pyx_t_6, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 120, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+    if (likely(PyList_CheckExact(__pyx_t_1)) || PyTuple_CheckExact(__pyx_t_1)) {
+      __pyx_t_6 = __pyx_t_1; __Pyx_INCREF(__pyx_t_6); __pyx_t_8 = 0;
+      __pyx_t_9 = NULL;
+    } else {
+      __pyx_t_8 = -1; __pyx_t_6 = PyObject_GetIter(__pyx_t_1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 120, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_6);
+      __pyx_t_9 = Py_TYPE(__pyx_t_6)->tp_iternext; if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 120, __pyx_L1_error)
+    }
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    for (;;) {
+      if (likely(!__pyx_t_9)) {
+        if (likely(PyList_CheckExact(__pyx_t_6))) {
+          if (__pyx_t_8 >= PyList_GET_SIZE(__pyx_t_6)) break;
+          #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+          __pyx_t_1 = PyList_GET_ITEM(__pyx_t_6, __pyx_t_8); __Pyx_INCREF(__pyx_t_1); __pyx_t_8++; if (unlikely(0 < 0)) __PYX_ERR(0, 120, __pyx_L1_error)
+          #else
+          __pyx_t_1 = PySequence_ITEM(__pyx_t_6, __pyx_t_8); __pyx_t_8++; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 120, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_1);
+          #endif
+        } else {
+          if (__pyx_t_8 >= PyTuple_GET_SIZE(__pyx_t_6)) break;
+          #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+          __pyx_t_1 = PyTuple_GET_ITEM(__pyx_t_6, __pyx_t_8); __Pyx_INCREF(__pyx_t_1); __pyx_t_8++; if (unlikely(0 < 0)) __PYX_ERR(0, 120, __pyx_L1_error)
+          #else
+          __pyx_t_1 = PySequence_ITEM(__pyx_t_6, __pyx_t_8); __pyx_t_8++; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 120, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_1);
+          #endif
+        }
+      } else {
+        __pyx_t_1 = __pyx_t_9(__pyx_t_6);
+        if (unlikely(!__pyx_t_1)) {
+          PyObject* exc_type = PyErr_Occurred();
+          if (exc_type) {
+            if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+            else __PYX_ERR(0, 120, __pyx_L1_error)
+          }
+          break;
+        }
+        __Pyx_GOTREF(__pyx_t_1);
+      }
+      __pyx_t_10 = __Pyx_PyInt_As_int(__pyx_t_1); if (unlikely((__pyx_t_10 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 120, __pyx_L1_error)
+      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+      __pyx_v_j = __pyx_t_10;
+
+      /* "_drainage.pyx":121
+ *   for i in range(iL[0],iL[1],iL[2]):
+ *       for j in range(jL[0],jL[1],jL[2]):
+ *           for k in range(kL[0],kL[1],kL[2]):             # <<<<<<<<<<<<<<
+ *             if _ind[i+1,j+1,k+1] == 1:
+ *               availDirection = 0
+ */
+      __pyx_t_1 = __Pyx_GetItemInt(__pyx_v_kL, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 121, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_1);
+      __pyx_t_7 = __Pyx_GetItemInt(__pyx_v_kL, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 121, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_7);
+      __pyx_t_11 = __Pyx_GetItemInt(__pyx_v_kL, 2, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 121, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_11);
+      __pyx_t_23 = PyTuple_New(3); if (unlikely(!__pyx_t_23)) __PYX_ERR(0, 121, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_23);
+      __Pyx_GIVEREF(__pyx_t_1);
+      PyTuple_SET_ITEM(__pyx_t_23, 0, __pyx_t_1);
+      __Pyx_GIVEREF(__pyx_t_7);
+      PyTuple_SET_ITEM(__pyx_t_23, 1, __pyx_t_7);
+      __Pyx_GIVEREF(__pyx_t_11);
+      PyTuple_SET_ITEM(__pyx_t_23, 2, __pyx_t_11);
+      __pyx_t_1 = 0;
+      __pyx_t_7 = 0;
+      __pyx_t_11 = 0;
+      __pyx_t_11 = __Pyx_PyObject_Call(__pyx_builtin_range, __pyx_t_23, NULL); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 121, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_11);
+      __Pyx_DECREF(__pyx_t_23); __pyx_t_23 = 0;
+      if (likely(PyList_CheckExact(__pyx_t_11)) || PyTuple_CheckExact(__pyx_t_11)) {
+        __pyx_t_23 = __pyx_t_11; __Pyx_INCREF(__pyx_t_23); __pyx_t_12 = 0;
+        __pyx_t_13 = NULL;
+      } else {
+        __pyx_t_12 = -1; __pyx_t_23 = PyObject_GetIter(__pyx_t_11); if (unlikely(!__pyx_t_23)) __PYX_ERR(0, 121, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_23);
+        __pyx_t_13 = Py_TYPE(__pyx_t_23)->tp_iternext; if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 121, __pyx_L1_error)
+      }
+      __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
+      for (;;) {
+        if (likely(!__pyx_t_13)) {
+          if (likely(PyList_CheckExact(__pyx_t_23))) {
+            if (__pyx_t_12 >= PyList_GET_SIZE(__pyx_t_23)) break;
+            #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+            __pyx_t_11 = PyList_GET_ITEM(__pyx_t_23, __pyx_t_12); __Pyx_INCREF(__pyx_t_11); __pyx_t_12++; if (unlikely(0 < 0)) __PYX_ERR(0, 121, __pyx_L1_error)
+            #else
+            __pyx_t_11 = PySequence_ITEM(__pyx_t_23, __pyx_t_12); __pyx_t_12++; if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 121, __pyx_L1_error)
+            __Pyx_GOTREF(__pyx_t_11);
+            #endif
+          } else {
+            if (__pyx_t_12 >= PyTuple_GET_SIZE(__pyx_t_23)) break;
+            #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+            __pyx_t_11 = PyTuple_GET_ITEM(__pyx_t_23, __pyx_t_12); __Pyx_INCREF(__pyx_t_11); __pyx_t_12++; if (unlikely(0 < 0)) __PYX_ERR(0, 121, __pyx_L1_error)
+            #else
+            __pyx_t_11 = PySequence_ITEM(__pyx_t_23, __pyx_t_12); __pyx_t_12++; if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 121, __pyx_L1_error)
+            __Pyx_GOTREF(__pyx_t_11);
+            #endif
+          }
+        } else {
+          __pyx_t_11 = __pyx_t_13(__pyx_t_23);
+          if (unlikely(!__pyx_t_11)) {
+            PyObject* exc_type = PyErr_Occurred();
+            if (exc_type) {
+              if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+              else __PYX_ERR(0, 121, __pyx_L1_error)
+            }
+            break;
+          }
+          __Pyx_GOTREF(__pyx_t_11);
+        }
+        __pyx_t_10 = __Pyx_PyInt_As_int(__pyx_t_11); if (unlikely((__pyx_t_10 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 121, __pyx_L1_error)
+        __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
+        __pyx_v_k = __pyx_t_10;
+
+        /* "_drainage.pyx":122
+ *       for j in range(jL[0],jL[1],jL[2]):
+ *           for k in range(kL[0],kL[1],kL[2]):
+ *             if _ind[i+1,j+1,k+1] == 1:             # <<<<<<<<<<<<<<
+ *               availDirection = 0
+ *               for d in range(0,numDirections):
+ */
+        __pyx_t_17 = (__pyx_v_i + 1);
+        __pyx_t_19 = (__pyx_v_j + 1);
+        __pyx_t_18 = (__pyx_v_k + 1);
+        __pyx_t_20 = (((*__Pyx_BufPtrStrided3d(__pyx_t_5numpy_uint8_t *, __pyx_pybuffernd__ind.rcbuffer->pybuffer.buf, __pyx_t_17, __pyx_pybuffernd__ind.diminfo[0].strides, __pyx_t_19, __pyx_pybuffernd__ind.diminfo[1].strides, __pyx_t_18, __pyx_pybuffernd__ind.diminfo[2].strides)) == 1) != 0);
+        if (__pyx_t_20) {
+
+          /* "_drainage.pyx":123
+ *           for k in range(kL[0],kL[1],kL[2]):
+ *             if _ind[i+1,j+1,k+1] == 1:
+ *               availDirection = 0             # <<<<<<<<<<<<<<
+ *               for d in range(0,numDirections):
+ *                   ii = directions[d][0] + 1
  */
           __pyx_v_availDirection = 0;
 
-          /* "_drainage.pyx":136
- *               if (_ind[i,j,k] == 1):
- *                   availDirection = 0
- *                   for d in range(0,numDirections):             # <<<<<<<<<<<<<<
- *                       ii = directions[d][0]
- *                       jj = directions[d][1]
+          /* "_drainage.pyx":124
+ *             if _ind[i+1,j+1,k+1] == 1:
+ *               availDirection = 0
+ *               for d in range(0,numDirections):             # <<<<<<<<<<<<<<
+ *                   ii = directions[d][0] + 1
+ *                   jj = directions[d][1] + 1
  */
-          __pyx_t_14 = __pyx_v_9_drainage_numDirections;
-          __pyx_t_15 = __pyx_t_14;
-          for (__pyx_t_16 = 0; __pyx_t_16 < __pyx_t_15; __pyx_t_16+=1) {
-            __pyx_v_d = __pyx_t_16;
+          __pyx_t_10 = __pyx_v_9_drainage_numDirections;
+          __pyx_t_21 = __pyx_t_10;
+          for (__pyx_t_22 = 0; __pyx_t_22 < __pyx_t_21; __pyx_t_22+=1) {
+            __pyx_v_d = __pyx_t_22;
 
-            /* "_drainage.pyx":137
- *                   availDirection = 0
- *                   for d in range(0,numDirections):
- *                       ii = directions[d][0]             # <<<<<<<<<<<<<<
- *                       jj = directions[d][1]
- *                       kk = directions[d][2]
+            /* "_drainage.pyx":125
+ *               availDirection = 0
+ *               for d in range(0,numDirections):
+ *                   ii = directions[d][0] + 1             # <<<<<<<<<<<<<<
+ *                   jj = directions[d][1] + 1
+ *                   kk = directions[d][2] + 1
  */
-            if (unlikely(!__pyx_v_9_drainage_directions.memview)) { __Pyx_RaiseUnboundLocalError("directions"); __PYX_ERR(0, 137, __pyx_L1_error) }
-            __pyx_t_12 = __pyx_v_d;
-            __pyx_t_11 = 0;
-            __pyx_v_ii = (*((__pyx_t_5numpy_int8_t *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_9_drainage_directions.data + __pyx_t_12 * __pyx_v_9_drainage_directions.strides[0]) ) + __pyx_t_11 * __pyx_v_9_drainage_directions.strides[1]) )));
+            if (unlikely(!__pyx_v_9_drainage_directions.memview)) { __Pyx_RaiseUnboundLocalError("directions"); __PYX_ERR(0, 125, __pyx_L1_error) }
+            __pyx_t_18 = __pyx_v_d;
+            __pyx_t_19 = 0;
+            __pyx_v_ii = ((*((__pyx_t_5numpy_int8_t *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_9_drainage_directions.data + __pyx_t_18 * __pyx_v_9_drainage_directions.strides[0]) ) + __pyx_t_19 * __pyx_v_9_drainage_directions.strides[1]) ))) + 1);
 
-            /* "_drainage.pyx":138
- *                   for d in range(0,numDirections):
- *                       ii = directions[d][0]
- *                       jj = directions[d][1]             # <<<<<<<<<<<<<<
- *                       kk = directions[d][2]
- *                       if (_ind[i+ii,j+jj,k+kk] == 1):
+            /* "_drainage.pyx":126
+ *               for d in range(0,numDirections):
+ *                   ii = directions[d][0] + 1
+ *                   jj = directions[d][1] + 1             # <<<<<<<<<<<<<<
+ *                   kk = directions[d][2] + 1
+ *                   if (_ind[i+ii,j+jj,k+kk] == 1):
  */
-            if (unlikely(!__pyx_v_9_drainage_directions.memview)) { __Pyx_RaiseUnboundLocalError("directions"); __PYX_ERR(0, 138, __pyx_L1_error) }
-            __pyx_t_11 = __pyx_v_d;
-            __pyx_t_12 = 1;
-            __pyx_v_jj = (*((__pyx_t_5numpy_int8_t *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_9_drainage_directions.data + __pyx_t_11 * __pyx_v_9_drainage_directions.strides[0]) ) + __pyx_t_12 * __pyx_v_9_drainage_directions.strides[1]) )));
+            if (unlikely(!__pyx_v_9_drainage_directions.memview)) { __Pyx_RaiseUnboundLocalError("directions"); __PYX_ERR(0, 126, __pyx_L1_error) }
+            __pyx_t_19 = __pyx_v_d;
+            __pyx_t_18 = 1;
+            __pyx_v_jj = ((*((__pyx_t_5numpy_int8_t *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_9_drainage_directions.data + __pyx_t_19 * __pyx_v_9_drainage_directions.strides[0]) ) + __pyx_t_18 * __pyx_v_9_drainage_directions.strides[1]) ))) + 1);
 
-            /* "_drainage.pyx":139
- *                       ii = directions[d][0]
- *                       jj = directions[d][1]
- *                       kk = directions[d][2]             # <<<<<<<<<<<<<<
- *                       if (_ind[i+ii,j+jj,k+kk] == 1):
- *                           #self.nodeInfo[c].validDirection(d)
+            /* "_drainage.pyx":127
+ *                   ii = directions[d][0] + 1
+ *                   jj = directions[d][1] + 1
+ *                   kk = directions[d][2] + 1             # <<<<<<<<<<<<<<
+ *                   if (_ind[i+ii,j+jj,k+kk] == 1):
+ *                       self.nodeInfo[c].direction[d] = 1
  */
-            if (unlikely(!__pyx_v_9_drainage_directions.memview)) { __Pyx_RaiseUnboundLocalError("directions"); __PYX_ERR(0, 139, __pyx_L1_error) }
-            __pyx_t_12 = __pyx_v_d;
-            __pyx_t_11 = 2;
-            __pyx_v_kk = (*((__pyx_t_5numpy_int8_t *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_9_drainage_directions.data + __pyx_t_12 * __pyx_v_9_drainage_directions.strides[0]) ) + __pyx_t_11 * __pyx_v_9_drainage_directions.strides[1]) )));
+            if (unlikely(!__pyx_v_9_drainage_directions.memview)) { __Pyx_RaiseUnboundLocalError("directions"); __PYX_ERR(0, 127, __pyx_L1_error) }
+            __pyx_t_18 = __pyx_v_d;
+            __pyx_t_19 = 2;
+            __pyx_v_kk = ((*((__pyx_t_5numpy_int8_t *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_9_drainage_directions.data + __pyx_t_18 * __pyx_v_9_drainage_directions.strides[0]) ) + __pyx_t_19 * __pyx_v_9_drainage_directions.strides[1]) ))) + 1);
 
-            /* "_drainage.pyx":140
- *                       jj = directions[d][1]
- *                       kk = directions[d][2]
- *                       if (_ind[i+ii,j+jj,k+kk] == 1):             # <<<<<<<<<<<<<<
- *                           #self.nodeInfo[c].validDirection(d)
- *                           self.nodeInfo[c].direction[d] = 1
+            /* "_drainage.pyx":128
+ *                   jj = directions[d][1] + 1
+ *                   kk = directions[d][2] + 1
+ *                   if (_ind[i+ii,j+jj,k+kk] == 1):             # <<<<<<<<<<<<<<
+ *                       self.nodeInfo[c].direction[d] = 1
+ *                       node = self.nodeTable[i+ii-1,j+jj-1,k+kk-1]
  */
-            __pyx_t_11 = (__pyx_v_i + __pyx_v_ii);
-            __pyx_t_12 = (__pyx_v_j + __pyx_v_jj);
-            __pyx_t_10 = (__pyx_v_k + __pyx_v_kk);
-            __pyx_t_13 = (((*__Pyx_BufPtrStrided3d(__pyx_t_5numpy_uint8_t *, __pyx_pybuffernd__ind.rcbuffer->pybuffer.buf, __pyx_t_11, __pyx_pybuffernd__ind.diminfo[0].strides, __pyx_t_12, __pyx_pybuffernd__ind.diminfo[1].strides, __pyx_t_10, __pyx_pybuffernd__ind.diminfo[2].strides)) == 1) != 0);
-            if (__pyx_t_13) {
+            __pyx_t_19 = (__pyx_v_i + __pyx_v_ii);
+            __pyx_t_18 = (__pyx_v_j + __pyx_v_jj);
+            __pyx_t_17 = (__pyx_v_k + __pyx_v_kk);
+            __pyx_t_20 = (((*__Pyx_BufPtrStrided3d(__pyx_t_5numpy_uint8_t *, __pyx_pybuffernd__ind.rcbuffer->pybuffer.buf, __pyx_t_19, __pyx_pybuffernd__ind.diminfo[0].strides, __pyx_t_18, __pyx_pybuffernd__ind.diminfo[1].strides, __pyx_t_17, __pyx_pybuffernd__ind.diminfo[2].strides)) == 1) != 0);
+            if (__pyx_t_20) {
 
-              /* "_drainage.pyx":142
- *                       if (_ind[i+ii,j+jj,k+kk] == 1):
- *                           #self.nodeInfo[c].validDirection(d)
- *                           self.nodeInfo[c].direction[d] = 1             # <<<<<<<<<<<<<<
- *                           node = self.nodeTable[i+ii-1,j+jj-1,k+kk-1]
- *                           #self.nodeInfo[c].setNodeDirection(d,node)
+              /* "_drainage.pyx":129
+ *                   kk = directions[d][2] + 1
+ *                   if (_ind[i+ii,j+jj,k+kk] == 1):
+ *                       self.nodeInfo[c].direction[d] = 1             # <<<<<<<<<<<<<<
+ *                       node = self.nodeTable[i+ii-1,j+jj-1,k+kk-1]
+ *                       self.nodeInfo[c].nodeDirection[d] = node
  */
-              __pyx_t_17 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeInfo); if (unlikely(!__pyx_t_17)) __PYX_ERR(0, 142, __pyx_L1_error)
-              __Pyx_GOTREF(__pyx_t_17);
-              __pyx_t_18 = __Pyx_GetItemInt(__pyx_t_17, __pyx_v_c, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_18)) __PYX_ERR(0, 142, __pyx_L1_error)
-              __Pyx_GOTREF(__pyx_t_18);
-              __Pyx_DECREF(__pyx_t_17); __pyx_t_17 = 0;
-              __pyx_t_17 = __Pyx_PyObject_GetAttrStr(__pyx_t_18, __pyx_n_s_direction_2); if (unlikely(!__pyx_t_17)) __PYX_ERR(0, 142, __pyx_L1_error)
-              __Pyx_GOTREF(__pyx_t_17);
-              __Pyx_DECREF(__pyx_t_18); __pyx_t_18 = 0;
-              if (unlikely(__Pyx_SetItemInt(__pyx_t_17, __pyx_v_d, __pyx_int_1, int, 1, __Pyx_PyInt_From_int, 0, 0, 0) < 0)) __PYX_ERR(0, 142, __pyx_L1_error)
-              __Pyx_DECREF(__pyx_t_17); __pyx_t_17 = 0;
+              __pyx_t_11 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeInfo); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 129, __pyx_L1_error)
+              __Pyx_GOTREF(__pyx_t_11);
+              __pyx_t_7 = __Pyx_GetItemInt(__pyx_t_11, __pyx_v_c, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 129, __pyx_L1_error)
+              __Pyx_GOTREF(__pyx_t_7);
+              __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
+              __pyx_t_11 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_n_s_direction_2); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 129, __pyx_L1_error)
+              __Pyx_GOTREF(__pyx_t_11);
+              __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+              if (unlikely(__Pyx_SetItemInt(__pyx_t_11, __pyx_v_d, __pyx_int_1, int, 1, __Pyx_PyInt_From_int, 0, 0, 0) < 0)) __PYX_ERR(0, 129, __pyx_L1_error)
+              __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
 
-              /* "_drainage.pyx":143
- *                           #self.nodeInfo[c].validDirection(d)
- *                           self.nodeInfo[c].direction[d] = 1
- *                           node = self.nodeTable[i+ii-1,j+jj-1,k+kk-1]             # <<<<<<<<<<<<<<
- *                           #self.nodeInfo[c].setNodeDirection(d,node)
- *                           self.nodeInfo[c].nodeDirection[d] = node
+              /* "_drainage.pyx":130
+ *                   if (_ind[i+ii,j+jj,k+kk] == 1):
+ *                       self.nodeInfo[c].direction[d] = 1
+ *                       node = self.nodeTable[i+ii-1,j+jj-1,k+kk-1]             # <<<<<<<<<<<<<<
+ *                       self.nodeInfo[c].nodeDirection[d] = node
+ *                       availDirection += 1
  */
-              __pyx_t_17 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeTable); if (unlikely(!__pyx_t_17)) __PYX_ERR(0, 143, __pyx_L1_error)
-              __Pyx_GOTREF(__pyx_t_17);
-              __pyx_t_18 = __Pyx_PyInt_From_long(((__pyx_v_i + __pyx_v_ii) - 1)); if (unlikely(!__pyx_t_18)) __PYX_ERR(0, 143, __pyx_L1_error)
-              __Pyx_GOTREF(__pyx_t_18);
-              __pyx_t_19 = __Pyx_PyInt_From_long(((__pyx_v_j + __pyx_v_jj) - 1)); if (unlikely(!__pyx_t_19)) __PYX_ERR(0, 143, __pyx_L1_error)
-              __Pyx_GOTREF(__pyx_t_19);
-              __pyx_t_20 = __Pyx_PyInt_From_long(((__pyx_v_k + __pyx_v_kk) - 1)); if (unlikely(!__pyx_t_20)) __PYX_ERR(0, 143, __pyx_L1_error)
-              __Pyx_GOTREF(__pyx_t_20);
-              __pyx_t_21 = PyTuple_New(3); if (unlikely(!__pyx_t_21)) __PYX_ERR(0, 143, __pyx_L1_error)
-              __Pyx_GOTREF(__pyx_t_21);
-              __Pyx_GIVEREF(__pyx_t_18);
-              PyTuple_SET_ITEM(__pyx_t_21, 0, __pyx_t_18);
-              __Pyx_GIVEREF(__pyx_t_19);
-              PyTuple_SET_ITEM(__pyx_t_21, 1, __pyx_t_19);
-              __Pyx_GIVEREF(__pyx_t_20);
-              PyTuple_SET_ITEM(__pyx_t_21, 2, __pyx_t_20);
-              __pyx_t_18 = 0;
-              __pyx_t_19 = 0;
-              __pyx_t_20 = 0;
-              __pyx_t_20 = __Pyx_PyObject_GetItem(__pyx_t_17, __pyx_t_21); if (unlikely(!__pyx_t_20)) __PYX_ERR(0, 143, __pyx_L1_error)
-              __Pyx_GOTREF(__pyx_t_20);
-              __Pyx_DECREF(__pyx_t_17); __pyx_t_17 = 0;
-              __Pyx_DECREF(__pyx_t_21); __pyx_t_21 = 0;
-              __Pyx_XDECREF_SET(__pyx_v_node, __pyx_t_20);
-              __pyx_t_20 = 0;
+              __pyx_t_11 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeTable); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 130, __pyx_L1_error)
+              __Pyx_GOTREF(__pyx_t_11);
+              __pyx_t_7 = __Pyx_PyInt_From_long(((__pyx_v_i + __pyx_v_ii) - 1)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 130, __pyx_L1_error)
+              __Pyx_GOTREF(__pyx_t_7);
+              __pyx_t_1 = __Pyx_PyInt_From_long(((__pyx_v_j + __pyx_v_jj) - 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 130, __pyx_L1_error)
+              __Pyx_GOTREF(__pyx_t_1);
+              __pyx_t_24 = __Pyx_PyInt_From_long(((__pyx_v_k + __pyx_v_kk) - 1)); if (unlikely(!__pyx_t_24)) __PYX_ERR(0, 130, __pyx_L1_error)
+              __Pyx_GOTREF(__pyx_t_24);
+              __pyx_t_5 = PyTuple_New(3); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 130, __pyx_L1_error)
+              __Pyx_GOTREF(__pyx_t_5);
+              __Pyx_GIVEREF(__pyx_t_7);
+              PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_7);
+              __Pyx_GIVEREF(__pyx_t_1);
+              PyTuple_SET_ITEM(__pyx_t_5, 1, __pyx_t_1);
+              __Pyx_GIVEREF(__pyx_t_24);
+              PyTuple_SET_ITEM(__pyx_t_5, 2, __pyx_t_24);
+              __pyx_t_7 = 0;
+              __pyx_t_1 = 0;
+              __pyx_t_24 = 0;
+              __pyx_t_24 = __Pyx_PyObject_GetItem(__pyx_t_11, __pyx_t_5); if (unlikely(!__pyx_t_24)) __PYX_ERR(0, 130, __pyx_L1_error)
+              __Pyx_GOTREF(__pyx_t_24);
+              __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
+              __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+              __Pyx_XDECREF_SET(__pyx_v_node, __pyx_t_24);
+              __pyx_t_24 = 0;
 
-              /* "_drainage.pyx":145
- *                           node = self.nodeTable[i+ii-1,j+jj-1,k+kk-1]
- *                           #self.nodeInfo[c].setNodeDirection(d,node)
- *                           self.nodeInfo[c].nodeDirection[d] = node             # <<<<<<<<<<<<<<
- *                           availDirection += 1
+              /* "_drainage.pyx":131
+ *                       self.nodeInfo[c].direction[d] = 1
+ *                       node = self.nodeTable[i+ii-1,j+jj-1,k+kk-1]
+ *                       self.nodeInfo[c].nodeDirection[d] = node             # <<<<<<<<<<<<<<
+ *                       availDirection += 1
  * 
  */
-              __pyx_t_20 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeInfo); if (unlikely(!__pyx_t_20)) __PYX_ERR(0, 145, __pyx_L1_error)
-              __Pyx_GOTREF(__pyx_t_20);
-              __pyx_t_21 = __Pyx_GetItemInt(__pyx_t_20, __pyx_v_c, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_21)) __PYX_ERR(0, 145, __pyx_L1_error)
-              __Pyx_GOTREF(__pyx_t_21);
-              __Pyx_DECREF(__pyx_t_20); __pyx_t_20 = 0;
-              __pyx_t_20 = __Pyx_PyObject_GetAttrStr(__pyx_t_21, __pyx_n_s_nodeDirection); if (unlikely(!__pyx_t_20)) __PYX_ERR(0, 145, __pyx_L1_error)
-              __Pyx_GOTREF(__pyx_t_20);
-              __Pyx_DECREF(__pyx_t_21); __pyx_t_21 = 0;
-              if (unlikely(__Pyx_SetItemInt(__pyx_t_20, __pyx_v_d, __pyx_v_node, int, 1, __Pyx_PyInt_From_int, 0, 0, 0) < 0)) __PYX_ERR(0, 145, __pyx_L1_error)
-              __Pyx_DECREF(__pyx_t_20); __pyx_t_20 = 0;
+              __pyx_t_24 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeInfo); if (unlikely(!__pyx_t_24)) __PYX_ERR(0, 131, __pyx_L1_error)
+              __Pyx_GOTREF(__pyx_t_24);
+              __pyx_t_5 = __Pyx_GetItemInt(__pyx_t_24, __pyx_v_c, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 131, __pyx_L1_error)
+              __Pyx_GOTREF(__pyx_t_5);
+              __Pyx_DECREF(__pyx_t_24); __pyx_t_24 = 0;
+              __pyx_t_24 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_nodeDirection); if (unlikely(!__pyx_t_24)) __PYX_ERR(0, 131, __pyx_L1_error)
+              __Pyx_GOTREF(__pyx_t_24);
+              __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+              if (unlikely(__Pyx_SetItemInt(__pyx_t_24, __pyx_v_d, __pyx_v_node, int, 1, __Pyx_PyInt_From_int, 0, 0, 0) < 0)) __PYX_ERR(0, 131, __pyx_L1_error)
+              __Pyx_DECREF(__pyx_t_24); __pyx_t_24 = 0;
 
-              /* "_drainage.pyx":146
- *                           #self.nodeInfo[c].setNodeDirection(d,node)
- *                           self.nodeInfo[c].nodeDirection[d] = node
- *                           availDirection += 1             # <<<<<<<<<<<<<<
+              /* "_drainage.pyx":132
+ *                       node = self.nodeTable[i+ii-1,j+jj-1,k+kk-1]
+ *                       self.nodeInfo[c].nodeDirection[d] = node
+ *                       availDirection += 1             # <<<<<<<<<<<<<<
  * 
- *                   self.nodeInfo[c].availDirection = availDirection
+ *               self.nodeInfo[c].availDirection = availDirection
  */
               __pyx_v_availDirection = (__pyx_v_availDirection + 1);
 
-              /* "_drainage.pyx":140
- *                       jj = directions[d][1]
- *                       kk = directions[d][2]
- *                       if (_ind[i+ii,j+jj,k+kk] == 1):             # <<<<<<<<<<<<<<
- *                           #self.nodeInfo[c].validDirection(d)
- *                           self.nodeInfo[c].direction[d] = 1
+              /* "_drainage.pyx":128
+ *                   jj = directions[d][1] + 1
+ *                   kk = directions[d][2] + 1
+ *                   if (_ind[i+ii,j+jj,k+kk] == 1):             # <<<<<<<<<<<<<<
+ *                       self.nodeInfo[c].direction[d] = 1
+ *                       node = self.nodeTable[i+ii-1,j+jj-1,k+kk-1]
  */
             }
           }
 
-          /* "_drainage.pyx":148
- *                           availDirection += 1
+          /* "_drainage.pyx":134
+ *                       availDirection += 1
  * 
- *                   self.nodeInfo[c].availDirection = availDirection             # <<<<<<<<<<<<<<
- *                   self.nodeInfo[c].saveDirection = self.nodeInfo[c].availDirection
+ *               self.nodeInfo[c].availDirection = availDirection             # <<<<<<<<<<<<<<
+ *               c = c + 1
  * 
  */
-          __pyx_t_20 = __Pyx_PyInt_From_int(__pyx_v_availDirection); if (unlikely(!__pyx_t_20)) __PYX_ERR(0, 148, __pyx_L1_error)
-          __Pyx_GOTREF(__pyx_t_20);
-          __pyx_t_21 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeInfo); if (unlikely(!__pyx_t_21)) __PYX_ERR(0, 148, __pyx_L1_error)
-          __Pyx_GOTREF(__pyx_t_21);
-          __pyx_t_17 = __Pyx_GetItemInt(__pyx_t_21, __pyx_v_c, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_17)) __PYX_ERR(0, 148, __pyx_L1_error)
-          __Pyx_GOTREF(__pyx_t_17);
-          __Pyx_DECREF(__pyx_t_21); __pyx_t_21 = 0;
-          if (__Pyx_PyObject_SetAttrStr(__pyx_t_17, __pyx_n_s_availDirection_2, __pyx_t_20) < 0) __PYX_ERR(0, 148, __pyx_L1_error)
-          __Pyx_DECREF(__pyx_t_20); __pyx_t_20 = 0;
-          __Pyx_DECREF(__pyx_t_17); __pyx_t_17 = 0;
+          __pyx_t_24 = __Pyx_PyInt_From_int(__pyx_v_availDirection); if (unlikely(!__pyx_t_24)) __PYX_ERR(0, 134, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_24);
+          __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeInfo); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 134, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_5);
+          __pyx_t_11 = __Pyx_GetItemInt(__pyx_t_5, __pyx_v_c, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 134, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_11);
+          __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+          if (__Pyx_PyObject_SetAttrStr(__pyx_t_11, __pyx_n_s_availDirection_2, __pyx_t_24) < 0) __PYX_ERR(0, 134, __pyx_L1_error)
+          __Pyx_DECREF(__pyx_t_24); __pyx_t_24 = 0;
+          __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
 
-          /* "_drainage.pyx":149
+          /* "_drainage.pyx":135
  * 
- *                   self.nodeInfo[c].availDirection = availDirection
- *                   self.nodeInfo[c].saveDirection = self.nodeInfo[c].availDirection             # <<<<<<<<<<<<<<
+ *               self.nodeInfo[c].availDirection = availDirection
+ *               c = c + 1             # <<<<<<<<<<<<<<
  * 
- *                   c = c + 1
- */
-          __pyx_t_17 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeInfo); if (unlikely(!__pyx_t_17)) __PYX_ERR(0, 149, __pyx_L1_error)
-          __Pyx_GOTREF(__pyx_t_17);
-          __pyx_t_20 = __Pyx_GetItemInt(__pyx_t_17, __pyx_v_c, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_20)) __PYX_ERR(0, 149, __pyx_L1_error)
-          __Pyx_GOTREF(__pyx_t_20);
-          __Pyx_DECREF(__pyx_t_17); __pyx_t_17 = 0;
-          __pyx_t_17 = __Pyx_PyObject_GetAttrStr(__pyx_t_20, __pyx_n_s_availDirection_2); if (unlikely(!__pyx_t_17)) __PYX_ERR(0, 149, __pyx_L1_error)
-          __Pyx_GOTREF(__pyx_t_17);
-          __Pyx_DECREF(__pyx_t_20); __pyx_t_20 = 0;
-          __pyx_t_20 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_nodeInfo); if (unlikely(!__pyx_t_20)) __PYX_ERR(0, 149, __pyx_L1_error)
-          __Pyx_GOTREF(__pyx_t_20);
-          __pyx_t_21 = __Pyx_GetItemInt(__pyx_t_20, __pyx_v_c, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_21)) __PYX_ERR(0, 149, __pyx_L1_error)
-          __Pyx_GOTREF(__pyx_t_21);
-          __Pyx_DECREF(__pyx_t_20); __pyx_t_20 = 0;
-          if (__Pyx_PyObject_SetAttrStr(__pyx_t_21, __pyx_n_s_saveDirection, __pyx_t_17) < 0) __PYX_ERR(0, 149, __pyx_L1_error)
-          __Pyx_DECREF(__pyx_t_17); __pyx_t_17 = 0;
-          __Pyx_DECREF(__pyx_t_21); __pyx_t_21 = 0;
-
-          /* "_drainage.pyx":151
- *                   self.nodeInfo[c].saveDirection = self.nodeInfo[c].availDirection
- * 
- *                   c = c + 1             # <<<<<<<<<<<<<<
+ * def  _genNodeInfo(self):
  */
           __pyx_v_c = (__pyx_v_c + 1);
 
-          /* "_drainage.pyx":134
- *       for j in range(1,NY-1):
- *           for k in range(1,NZ-1):
- *               if (_ind[i,j,k] == 1):             # <<<<<<<<<<<<<<
- *                   availDirection = 0
- *                   for d in range(0,numDirections):
+          /* "_drainage.pyx":122
+ *       for j in range(jL[0],jL[1],jL[2]):
+ *           for k in range(kL[0],kL[1],kL[2]):
+ *             if _ind[i+1,j+1,k+1] == 1:             # <<<<<<<<<<<<<<
+ *               availDirection = 0
+ *               for d in range(0,numDirections):
  */
         }
-      }
-    }
-  }
 
-  /* "_drainage.pyx":121
+        /* "_drainage.pyx":121
+ *   for i in range(iL[0],iL[1],iL[2]):
+ *       for j in range(jL[0],jL[1],jL[2]):
+ *           for k in range(kL[0],kL[1],kL[2]):             # <<<<<<<<<<<<<<
+ *             if _ind[i+1,j+1,k+1] == 1:
+ *               availDirection = 0
+ */
+      }
+      __Pyx_DECREF(__pyx_t_23); __pyx_t_23 = 0;
+
+      /* "_drainage.pyx":120
+ *   kL = self.subDomain.loopInfo[innerID][2]
+ *   for i in range(iL[0],iL[1],iL[2]):
+ *       for j in range(jL[0],jL[1],jL[2]):             # <<<<<<<<<<<<<<
+ *           for k in range(kL[0],kL[1],kL[2]):
+ *             if _ind[i+1,j+1,k+1] == 1:
+ */
+    }
+    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+
+    /* "_drainage.pyx":119
+ *   jL = self.subDomain.loopInfo[innerID][1]
+ *   kL = self.subDomain.loopInfo[innerID][2]
+ *   for i in range(iL[0],iL[1],iL[2]):             # <<<<<<<<<<<<<<
+ *       for j in range(jL[0],jL[1],jL[2]):
+ *           for k in range(kL[0],kL[1],kL[2]):
+ */
+  }
+  __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
+
+  /* "_drainage.pyx":87
  * 
  * 
  * def  _genNodeDirections(self,             # <<<<<<<<<<<<<<
@@ -3531,11 +4364,15 @@ static PyObject *__pyx_pf_9_drainage_2_genNodeDirections(CYTHON_UNUSED PyObject 
   __pyx_r = Py_None; __Pyx_INCREF(Py_None);
   goto __pyx_L0;
   __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_17);
-  __Pyx_XDECREF(__pyx_t_18);
-  __Pyx_XDECREF(__pyx_t_19);
-  __Pyx_XDECREF(__pyx_t_20);
-  __Pyx_XDECREF(__pyx_t_21);
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_5);
+  __Pyx_XDECREF(__pyx_t_6);
+  __Pyx_XDECREF(__pyx_t_7);
+  __Pyx_XDECREF(__pyx_t_11);
+  __Pyx_XDECREF(__pyx_t_14);
+  __Pyx_XDECREF(__pyx_t_23);
+  __Pyx_XDECREF(__pyx_t_24);
   { PyObject *__pyx_type, *__pyx_value, *__pyx_tb;
     __Pyx_PyThreadState_declare
     __Pyx_PyThreadState_assign
@@ -3548,7 +4385,46 @@ static PyObject *__pyx_pf_9_drainage_2_genNodeDirections(CYTHON_UNUSED PyObject 
   __pyx_L0:;
   __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd__ind.rcbuffer->pybuffer);
   __pyx_L2:;
+  __Pyx_XDECREF(__pyx_v_fIndex);
+  __Pyx_XDECREF(__pyx_v_iL);
+  __Pyx_XDECREF(__pyx_v_jL);
+  __Pyx_XDECREF(__pyx_v_kL);
   __Pyx_XDECREF(__pyx_v_node);
+  __Pyx_XDECREF(__pyx_v_innerID);
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "_drainage.pyx":137
+ *               c = c + 1
+ * 
+ * def  _genNodeInfo(self):             # <<<<<<<<<<<<<<
+ *   pass
+ * 
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_9_drainage_5_genNodeInfo(PyObject *__pyx_self, PyObject *__pyx_v_self); /*proto*/
+static PyMethodDef __pyx_mdef_9_drainage_5_genNodeInfo = {"_genNodeInfo", (PyCFunction)__pyx_pw_9_drainage_5_genNodeInfo, METH_O, 0};
+static PyObject *__pyx_pw_9_drainage_5_genNodeInfo(PyObject *__pyx_self, PyObject *__pyx_v_self) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("_genNodeInfo (wrapper)", 0);
+  __pyx_r = __pyx_pf_9_drainage_4_genNodeInfo(__pyx_self, ((PyObject *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_9_drainage_4_genNodeInfo(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("_genNodeInfo", 0);
+
+  /* function exit code */
+  __pyx_r = Py_None; __Pyx_INCREF(Py_None);
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
@@ -18368,10 +19244,8 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_MemoryError, __pyx_k_MemoryError, sizeof(__pyx_k_MemoryError), 0, 0, 1, 1},
   {&__pyx_kp_s_MemoryView_of_r_at_0x_x, __pyx_k_MemoryView_of_r_at_0x_x, sizeof(__pyx_k_MemoryView_of_r_at_0x_x), 0, 0, 1, 0},
   {&__pyx_kp_s_MemoryView_of_r_object, __pyx_k_MemoryView_of_r_object, sizeof(__pyx_k_MemoryView_of_r_object), 0, 0, 1, 0},
-  {&__pyx_n_s_NX, __pyx_k_NX, sizeof(__pyx_k_NX), 0, 0, 1, 1},
-  {&__pyx_n_s_NY, __pyx_k_NY, sizeof(__pyx_k_NY), 0, 0, 1, 1},
-  {&__pyx_n_s_NZ, __pyx_k_NZ, sizeof(__pyx_k_NZ), 0, 0, 1, 1},
   {&__pyx_n_b_O, __pyx_k_O, sizeof(__pyx_k_O), 0, 0, 0, 1},
+  {&__pyx_n_s_Orientation, __pyx_k_Orientation, sizeof(__pyx_k_Orientation), 0, 0, 1, 1},
   {&__pyx_kp_s_Out_of_bounds_on_buffer_access_a, __pyx_k_Out_of_bounds_on_buffer_access_a, sizeof(__pyx_k_Out_of_bounds_on_buffer_access_a), 0, 0, 1, 0},
   {&__pyx_kp_s_PMMoTo__drainage_pyx, __pyx_k_PMMoTo__drainage_pyx, sizeof(__pyx_k_PMMoTo__drainage_pyx), 0, 0, 1, 0},
   {&__pyx_n_s_PickleError, __pyx_k_PickleError, sizeof(__pyx_k_PickleError), 0, 0, 1, 1},
@@ -18401,28 +19275,36 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_encode, __pyx_k_encode, sizeof(__pyx_k_encode), 0, 0, 1, 1},
   {&__pyx_n_s_enumerate, __pyx_k_enumerate, sizeof(__pyx_k_enumerate), 0, 0, 1, 1},
   {&__pyx_n_s_error, __pyx_k_error, sizeof(__pyx_k_error), 0, 0, 1, 1},
+  {&__pyx_n_s_fIndex, __pyx_k_fIndex, sizeof(__pyx_k_fIndex), 0, 0, 1, 1},
+  {&__pyx_n_s_faces, __pyx_k_faces, sizeof(__pyx_k_faces), 0, 0, 1, 1},
   {&__pyx_n_s_flags, __pyx_k_flags, sizeof(__pyx_k_flags), 0, 0, 1, 1},
   {&__pyx_n_s_format, __pyx_k_format, sizeof(__pyx_k_format), 0, 0, 1, 1},
   {&__pyx_n_s_fortran, __pyx_k_fortran, sizeof(__pyx_k_fortran), 0, 0, 1, 1},
   {&__pyx_n_u_fortran, __pyx_k_fortran, sizeof(__pyx_k_fortran), 0, 1, 0, 1},
   {&__pyx_n_s_found, __pyx_k_found, sizeof(__pyx_k_found), 0, 0, 1, 1},
   {&__pyx_n_s_genNodeDirections, __pyx_k_genNodeDirections, sizeof(__pyx_k_genNodeDirections), 0, 0, 1, 1},
+  {&__pyx_n_s_genNodeInfo, __pyx_k_genNodeInfo, sizeof(__pyx_k_genNodeInfo), 0, 0, 1, 1},
   {&__pyx_n_s_getDirection3D, __pyx_k_getDirection3D, sizeof(__pyx_k_getDirection3D), 0, 0, 1, 1},
   {&__pyx_n_s_getstate, __pyx_k_getstate, sizeof(__pyx_k_getstate), 0, 0, 1, 1},
   {&__pyx_kp_s_got_differing_extents_in_dimensi, __pyx_k_got_differing_extents_in_dimensi, sizeof(__pyx_k_got_differing_extents_in_dimensi), 0, 0, 1, 0},
   {&__pyx_n_s_i, __pyx_k_i, sizeof(__pyx_k_i), 0, 0, 1, 1},
+  {&__pyx_n_s_iL, __pyx_k_iL, sizeof(__pyx_k_iL), 0, 0, 1, 1},
   {&__pyx_n_s_id, __pyx_k_id, sizeof(__pyx_k_id), 0, 0, 1, 1},
   {&__pyx_n_s_ii, __pyx_k_ii, sizeof(__pyx_k_ii), 0, 0, 1, 1},
   {&__pyx_n_s_import, __pyx_k_import, sizeof(__pyx_k_import), 0, 0, 1, 1},
   {&__pyx_n_s_ind, __pyx_k_ind, sizeof(__pyx_k_ind), 0, 0, 1, 1},
+  {&__pyx_n_s_innerID, __pyx_k_innerID, sizeof(__pyx_k_innerID), 0, 0, 1, 1},
   {&__pyx_n_s_int8, __pyx_k_int8, sizeof(__pyx_k_int8), 0, 0, 1, 1},
   {&__pyx_n_s_itemsize, __pyx_k_itemsize, sizeof(__pyx_k_itemsize), 0, 0, 1, 1},
   {&__pyx_kp_s_itemsize_0_for_cython_array, __pyx_k_itemsize_0_for_cython_array, sizeof(__pyx_k_itemsize_0_for_cython_array), 0, 0, 1, 0},
   {&__pyx_n_s_j, __pyx_k_j, sizeof(__pyx_k_j), 0, 0, 1, 1},
+  {&__pyx_n_s_jL, __pyx_k_jL, sizeof(__pyx_k_jL), 0, 0, 1, 1},
   {&__pyx_n_s_jj, __pyx_k_jj, sizeof(__pyx_k_jj), 0, 0, 1, 1},
   {&__pyx_n_s_k, __pyx_k_k, sizeof(__pyx_k_k), 0, 0, 1, 1},
+  {&__pyx_n_s_kL, __pyx_k_kL, sizeof(__pyx_k_kL), 0, 0, 1, 1},
   {&__pyx_n_s_kk, __pyx_k_kk, sizeof(__pyx_k_kk), 0, 0, 1, 1},
   {&__pyx_n_s_localIndex, __pyx_k_localIndex, sizeof(__pyx_k_localIndex), 0, 0, 1, 1},
+  {&__pyx_n_s_loopInfo, __pyx_k_loopInfo, sizeof(__pyx_k_loopInfo), 0, 0, 1, 1},
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
   {&__pyx_n_s_math, __pyx_k_math, sizeof(__pyx_k_math), 0, 0, 1, 1},
   {&__pyx_n_s_memview, __pyx_k_memview, sizeof(__pyx_k_memview), 0, 0, 1, 1},
@@ -18438,6 +19320,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_nodeTable, __pyx_k_nodeTable, sizeof(__pyx_k_nodeTable), 0, 0, 1, 1},
   {&__pyx_n_s_node_2, __pyx_k_node_2, sizeof(__pyx_k_node_2), 0, 0, 1, 1},
   {&__pyx_n_s_np, __pyx_k_np, sizeof(__pyx_k_np), 0, 0, 1, 1},
+  {&__pyx_n_s_numFaces, __pyx_k_numFaces, sizeof(__pyx_k_numFaces), 0, 0, 1, 1},
   {&__pyx_n_s_numpy, __pyx_k_numpy, sizeof(__pyx_k_numpy), 0, 0, 1, 1},
   {&__pyx_kp_s_numpy_core_multiarray_failed_to, __pyx_k_numpy_core_multiarray_failed_to, sizeof(__pyx_k_numpy_core_multiarray_failed_to), 0, 0, 1, 0},
   {&__pyx_kp_s_numpy_core_umath_failed_to_impor, __pyx_k_numpy_core_umath_failed_to_impor, sizeof(__pyx_k_numpy_core_umath_failed_to_impor), 0, 0, 1, 0},
@@ -18458,7 +19341,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_reduce_cython, __pyx_k_reduce_cython, sizeof(__pyx_k_reduce_cython), 0, 0, 1, 1},
   {&__pyx_n_s_reduce_ex, __pyx_k_reduce_ex, sizeof(__pyx_k_reduce_ex), 0, 0, 1, 1},
   {&__pyx_n_s_returnCell, __pyx_k_returnCell, sizeof(__pyx_k_returnCell), 0, 0, 1, 1},
-  {&__pyx_n_s_saveDirection, __pyx_k_saveDirection, sizeof(__pyx_k_saveDirection), 0, 0, 1, 1},
   {&__pyx_n_s_self, __pyx_k_self, sizeof(__pyx_k_self), 0, 0, 1, 1},
   {&__pyx_n_s_setstate, __pyx_k_setstate, sizeof(__pyx_k_setstate), 0, 0, 1, 1},
   {&__pyx_n_s_setstate_cython, __pyx_k_setstate_cython, sizeof(__pyx_k_setstate_cython), 0, 0, 1, 1},
@@ -18472,6 +19354,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_kp_s_strided_and_indirect, __pyx_k_strided_and_indirect, sizeof(__pyx_k_strided_and_indirect), 0, 0, 1, 0},
   {&__pyx_kp_s_stringsource, __pyx_k_stringsource, sizeof(__pyx_k_stringsource), 0, 0, 1, 0},
   {&__pyx_n_s_struct, __pyx_k_struct, sizeof(__pyx_k_struct), 0, 0, 1, 1},
+  {&__pyx_n_s_subDomain, __pyx_k_subDomain, sizeof(__pyx_k_subDomain), 0, 0, 1, 1},
   {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
   {&__pyx_kp_s_unable_to_allocate_array_data, __pyx_k_unable_to_allocate_array_data, sizeof(__pyx_k_unable_to_allocate_array_data), 0, 0, 1, 0},
   {&__pyx_kp_s_unable_to_allocate_shape_and_str, __pyx_k_unable_to_allocate_shape_and_str, sizeof(__pyx_k_unable_to_allocate_shape_and_str), 0, 0, 1, 0},
@@ -18480,7 +19363,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {0, 0, 0, 0, 0, 0, 0}
 };
 static CYTHON_SMALL_CODE int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 131, __pyx_L1_error)
+  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 97, __pyx_L1_error)
   __pyx_builtin_ImportError = __Pyx_GetBuiltinName(__pyx_n_s_ImportError); if (!__pyx_builtin_ImportError) __PYX_ERR(1, 945, __pyx_L1_error)
   __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(2, 133, __pyx_L1_error)
   __pyx_builtin_MemoryError = __Pyx_GetBuiltinName(__pyx_n_s_MemoryError); if (!__pyx_builtin_MemoryError) __PYX_ERR(2, 148, __pyx_L1_error)
@@ -18712,29 +19595,41 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__20);
   __Pyx_GIVEREF(__pyx_tuple__20);
 
-  /* "_drainage.pyx":74
+  /* "_drainage.pyx":46
  * 
  * 
  * def _getDirection3D(self,             # <<<<<<<<<<<<<<
  *                     int ID,
  *                     list _localIndex,
  */
-  __pyx_tuple__21 = PyTuple_Pack(16, __pyx_n_s_self, __pyx_n_s_ID, __pyx_n_s_localIndex, __pyx_n_s_availDirection, __pyx_n_s_direction, __pyx_n_s_node, __pyx_n_s_i, __pyx_n_s_j, __pyx_n_s_k, __pyx_n_s_d, __pyx_n_s_ii, __pyx_n_s_jj, __pyx_n_s_kk, __pyx_n_s_oppDir, __pyx_n_s_returnCell, __pyx_n_s_found); if (unlikely(!__pyx_tuple__21)) __PYX_ERR(0, 74, __pyx_L1_error)
+  __pyx_tuple__21 = PyTuple_Pack(16, __pyx_n_s_self, __pyx_n_s_ID, __pyx_n_s_localIndex, __pyx_n_s_availDirection, __pyx_n_s_direction, __pyx_n_s_node, __pyx_n_s_i, __pyx_n_s_j, __pyx_n_s_k, __pyx_n_s_d, __pyx_n_s_ii, __pyx_n_s_jj, __pyx_n_s_kk, __pyx_n_s_oppDir, __pyx_n_s_returnCell, __pyx_n_s_found); if (unlikely(!__pyx_tuple__21)) __PYX_ERR(0, 46, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__21);
   __Pyx_GIVEREF(__pyx_tuple__21);
-  __pyx_codeobj__22 = (PyObject*)__Pyx_PyCode_New(6, 0, 16, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__21, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_PMMoTo__drainage_pyx, __pyx_n_s_getDirection3D, 74, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__22)) __PYX_ERR(0, 74, __pyx_L1_error)
+  __pyx_codeobj__22 = (PyObject*)__Pyx_PyCode_New(6, 0, 16, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__21, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_PMMoTo__drainage_pyx, __pyx_n_s_getDirection3D, 46, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__22)) __PYX_ERR(0, 46, __pyx_L1_error)
 
-  /* "_drainage.pyx":121
+  /* "_drainage.pyx":87
  * 
  * 
  * def  _genNodeDirections(self,             # <<<<<<<<<<<<<<
  *                         cnp.ndarray[cnp.uint8_t, ndim=3] _ind):
  * 
  */
-  __pyx_tuple__23 = PyTuple_Pack(15, __pyx_n_s_self, __pyx_n_s_ind, __pyx_n_s_i, __pyx_n_s_j, __pyx_n_s_k, __pyx_n_s_c, __pyx_n_s_d, __pyx_n_s_ii, __pyx_n_s_jj, __pyx_n_s_kk, __pyx_n_s_availDirection_2, __pyx_n_s_NX, __pyx_n_s_NY, __pyx_n_s_NZ, __pyx_n_s_node_2); if (unlikely(!__pyx_tuple__23)) __PYX_ERR(0, 121, __pyx_L1_error)
+  __pyx_tuple__23 = PyTuple_Pack(17, __pyx_n_s_self, __pyx_n_s_ind, __pyx_n_s_i, __pyx_n_s_j, __pyx_n_s_k, __pyx_n_s_c, __pyx_n_s_d, __pyx_n_s_ii, __pyx_n_s_jj, __pyx_n_s_kk, __pyx_n_s_availDirection_2, __pyx_n_s_fIndex, __pyx_n_s_iL, __pyx_n_s_jL, __pyx_n_s_kL, __pyx_n_s_node_2, __pyx_n_s_innerID); if (unlikely(!__pyx_tuple__23)) __PYX_ERR(0, 87, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__23);
   __Pyx_GIVEREF(__pyx_tuple__23);
-  __pyx_codeobj__24 = (PyObject*)__Pyx_PyCode_New(2, 0, 15, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__23, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_PMMoTo__drainage_pyx, __pyx_n_s_genNodeDirections, 121, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__24)) __PYX_ERR(0, 121, __pyx_L1_error)
+  __pyx_codeobj__24 = (PyObject*)__Pyx_PyCode_New(2, 0, 17, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__23, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_PMMoTo__drainage_pyx, __pyx_n_s_genNodeDirections, 87, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__24)) __PYX_ERR(0, 87, __pyx_L1_error)
+
+  /* "_drainage.pyx":137
+ *               c = c + 1
+ * 
+ * def  _genNodeInfo(self):             # <<<<<<<<<<<<<<
+ *   pass
+ * 
+ */
+  __pyx_tuple__25 = PyTuple_Pack(1, __pyx_n_s_self); if (unlikely(!__pyx_tuple__25)) __PYX_ERR(0, 137, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__25);
+  __Pyx_GIVEREF(__pyx_tuple__25);
+  __pyx_codeobj__26 = (PyObject*)__Pyx_PyCode_New(1, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__25, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_PMMoTo__drainage_pyx, __pyx_n_s_genNodeInfo, 137, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__26)) __PYX_ERR(0, 137, __pyx_L1_error)
 
   /* "View.MemoryView":286
  *         return self.name
@@ -18743,9 +19638,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * cdef strided = Enum("<strided and direct>") # default
  * cdef indirect = Enum("<strided and indirect>")
  */
-  __pyx_tuple__25 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct_or_indirect); if (unlikely(!__pyx_tuple__25)) __PYX_ERR(2, 286, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__25);
-  __Pyx_GIVEREF(__pyx_tuple__25);
+  __pyx_tuple__27 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct_or_indirect); if (unlikely(!__pyx_tuple__27)) __PYX_ERR(2, 286, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__27);
+  __Pyx_GIVEREF(__pyx_tuple__27);
 
   /* "View.MemoryView":287
  * 
@@ -18754,9 +19649,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * cdef indirect = Enum("<strided and indirect>")
  * 
  */
-  __pyx_tuple__26 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct); if (unlikely(!__pyx_tuple__26)) __PYX_ERR(2, 287, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__26);
-  __Pyx_GIVEREF(__pyx_tuple__26);
+  __pyx_tuple__28 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct); if (unlikely(!__pyx_tuple__28)) __PYX_ERR(2, 287, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__28);
+  __Pyx_GIVEREF(__pyx_tuple__28);
 
   /* "View.MemoryView":288
  * cdef generic = Enum("<strided and direct or indirect>")
@@ -18765,9 +19660,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * 
  */
-  __pyx_tuple__27 = PyTuple_Pack(1, __pyx_kp_s_strided_and_indirect); if (unlikely(!__pyx_tuple__27)) __PYX_ERR(2, 288, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__27);
-  __Pyx_GIVEREF(__pyx_tuple__27);
+  __pyx_tuple__29 = PyTuple_Pack(1, __pyx_kp_s_strided_and_indirect); if (unlikely(!__pyx_tuple__29)) __PYX_ERR(2, 288, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__29);
+  __Pyx_GIVEREF(__pyx_tuple__29);
 
   /* "View.MemoryView":291
  * 
@@ -18776,9 +19671,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * cdef indirect_contiguous = Enum("<contiguous and indirect>")
  * 
  */
-  __pyx_tuple__28 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_direct); if (unlikely(!__pyx_tuple__28)) __PYX_ERR(2, 291, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__28);
-  __Pyx_GIVEREF(__pyx_tuple__28);
+  __pyx_tuple__30 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_direct); if (unlikely(!__pyx_tuple__30)) __PYX_ERR(2, 291, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__30);
+  __Pyx_GIVEREF(__pyx_tuple__30);
 
   /* "View.MemoryView":292
  * 
@@ -18787,19 +19682,19 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * 
  */
-  __pyx_tuple__29 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_indirect); if (unlikely(!__pyx_tuple__29)) __PYX_ERR(2, 292, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__29);
-  __Pyx_GIVEREF(__pyx_tuple__29);
+  __pyx_tuple__31 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_indirect); if (unlikely(!__pyx_tuple__31)) __PYX_ERR(2, 292, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__31);
+  __Pyx_GIVEREF(__pyx_tuple__31);
 
   /* "(tree fragment)":1
  * def __pyx_unpickle_Enum(__pyx_type, long __pyx_checksum, __pyx_state):             # <<<<<<<<<<<<<<
  *     cdef object __pyx_PickleError
  *     cdef object __pyx_result
  */
-  __pyx_tuple__30 = PyTuple_Pack(5, __pyx_n_s_pyx_type, __pyx_n_s_pyx_checksum, __pyx_n_s_pyx_state, __pyx_n_s_pyx_PickleError, __pyx_n_s_pyx_result); if (unlikely(!__pyx_tuple__30)) __PYX_ERR(2, 1, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__30);
-  __Pyx_GIVEREF(__pyx_tuple__30);
-  __pyx_codeobj__31 = (PyObject*)__Pyx_PyCode_New(3, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__30, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_pyx_unpickle_Enum, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__31)) __PYX_ERR(2, 1, __pyx_L1_error)
+  __pyx_tuple__32 = PyTuple_Pack(5, __pyx_n_s_pyx_type, __pyx_n_s_pyx_checksum, __pyx_n_s_pyx_state, __pyx_n_s_pyx_PickleError, __pyx_n_s_pyx_result); if (unlikely(!__pyx_tuple__32)) __PYX_ERR(2, 1, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__32);
+  __Pyx_GIVEREF(__pyx_tuple__32);
+  __pyx_codeobj__33 = (PyObject*)__Pyx_PyCode_New(3, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__32, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_pyx_unpickle_Enum, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__33)) __PYX_ERR(2, 1, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -19279,12 +20174,12 @@ if (!__Pyx_RefNanny) {
  * from libc.stdio cimport printf
  * cnp.import_array()             # <<<<<<<<<<<<<<
  * 
- * 
+ * cdef int numDirections = 26
  */
   __pyx_t_2 = __pyx_f_5numpy_import_array(); if (unlikely(__pyx_t_2 == ((int)-1))) __PYX_ERR(0, 11, __pyx_L1_error)
 
-  /* "_drainage.pyx":14
- * 
+  /* "_drainage.pyx":13
+ * cnp.import_array()
  * 
  * cdef int numDirections = 26             # <<<<<<<<<<<<<<
  * _directions =  np.array([[-1,-1,-1,  0, 13],
@@ -19292,19 +20187,19 @@ if (!__Pyx_RefNanny) {
  */
   __pyx_v_9_drainage_numDirections = 26;
 
-  /* "_drainage.pyx":15
+  /* "_drainage.pyx":14
  * 
  * cdef int numDirections = 26
  * _directions =  np.array([[-1,-1,-1,  0, 13],             # <<<<<<<<<<<<<<
  *               [-1,-1, 1,  1, 12],
  *               [-1,-1, 0,  2, 14],
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 14, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_array); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_array); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 14, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyList_New(5); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_t_1 = PyList_New(5); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 14, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_INCREF(__pyx_int_neg_1);
   __Pyx_GIVEREF(__pyx_int_neg_1);
@@ -19322,14 +20217,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_13);
   PyList_SET_ITEM(__pyx_t_1, 4, __pyx_int_13);
 
-  /* "_drainage.pyx":16
+  /* "_drainage.pyx":15
  * cdef int numDirections = 26
  * _directions =  np.array([[-1,-1,-1,  0, 13],
  *               [-1,-1, 1,  1, 12],             # <<<<<<<<<<<<<<
  *               [-1,-1, 0,  2, 14],
  *               [-1, 1,-1,  3, 10],
  */
-  __pyx_t_4 = PyList_New(5); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 16, __pyx_L1_error)
+  __pyx_t_4 = PyList_New(5); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 15, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_INCREF(__pyx_int_neg_1);
   __Pyx_GIVEREF(__pyx_int_neg_1);
@@ -19347,14 +20242,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_12);
   PyList_SET_ITEM(__pyx_t_4, 4, __pyx_int_12);
 
-  /* "_drainage.pyx":17
+  /* "_drainage.pyx":16
  * _directions =  np.array([[-1,-1,-1,  0, 13],
  *               [-1,-1, 1,  1, 12],
  *               [-1,-1, 0,  2, 14],             # <<<<<<<<<<<<<<
  *               [-1, 1,-1,  3, 10],
  *               [-1, 1, 1,  4,  9],
  */
-  __pyx_t_5 = PyList_New(5); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 17, __pyx_L1_error)
+  __pyx_t_5 = PyList_New(5); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 16, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_INCREF(__pyx_int_neg_1);
   __Pyx_GIVEREF(__pyx_int_neg_1);
@@ -19372,14 +20267,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_14);
   PyList_SET_ITEM(__pyx_t_5, 4, __pyx_int_14);
 
-  /* "_drainage.pyx":18
+  /* "_drainage.pyx":17
  *               [-1,-1, 1,  1, 12],
  *               [-1,-1, 0,  2, 14],
  *               [-1, 1,-1,  3, 10],             # <<<<<<<<<<<<<<
  *               [-1, 1, 1,  4,  9],
  *               [-1, 1, 0,  5, 11],
  */
-  __pyx_t_6 = PyList_New(5); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 18, __pyx_L1_error)
+  __pyx_t_6 = PyList_New(5); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 17, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_INCREF(__pyx_int_neg_1);
   __Pyx_GIVEREF(__pyx_int_neg_1);
@@ -19397,14 +20292,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_10);
   PyList_SET_ITEM(__pyx_t_6, 4, __pyx_int_10);
 
-  /* "_drainage.pyx":19
+  /* "_drainage.pyx":18
  *               [-1,-1, 0,  2, 14],
  *               [-1, 1,-1,  3, 10],
  *               [-1, 1, 1,  4,  9],             # <<<<<<<<<<<<<<
  *               [-1, 1, 0,  5, 11],
  *               [-1, 0,-1,  6, 16],
  */
-  __pyx_t_7 = PyList_New(5); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 19, __pyx_L1_error)
+  __pyx_t_7 = PyList_New(5); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 18, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_INCREF(__pyx_int_neg_1);
   __Pyx_GIVEREF(__pyx_int_neg_1);
@@ -19422,14 +20317,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_9);
   PyList_SET_ITEM(__pyx_t_7, 4, __pyx_int_9);
 
-  /* "_drainage.pyx":20
+  /* "_drainage.pyx":19
  *               [-1, 1,-1,  3, 10],
  *               [-1, 1, 1,  4,  9],
  *               [-1, 1, 0,  5, 11],             # <<<<<<<<<<<<<<
  *               [-1, 0,-1,  6, 16],
  *               [-1, 0, 1,  7, 15],
  */
-  __pyx_t_8 = PyList_New(5); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 20, __pyx_L1_error)
+  __pyx_t_8 = PyList_New(5); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 19, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __Pyx_INCREF(__pyx_int_neg_1);
   __Pyx_GIVEREF(__pyx_int_neg_1);
@@ -19447,14 +20342,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_11);
   PyList_SET_ITEM(__pyx_t_8, 4, __pyx_int_11);
 
-  /* "_drainage.pyx":21
+  /* "_drainage.pyx":20
  *               [-1, 1, 1,  4,  9],
  *               [-1, 1, 0,  5, 11],
  *               [-1, 0,-1,  6, 16],             # <<<<<<<<<<<<<<
  *               [-1, 0, 1,  7, 15],
  *               [-1, 0, 0,  8, 17],
  */
-  __pyx_t_9 = PyList_New(5); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 21, __pyx_L1_error)
+  __pyx_t_9 = PyList_New(5); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 20, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __Pyx_INCREF(__pyx_int_neg_1);
   __Pyx_GIVEREF(__pyx_int_neg_1);
@@ -19472,14 +20367,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_16);
   PyList_SET_ITEM(__pyx_t_9, 4, __pyx_int_16);
 
-  /* "_drainage.pyx":22
+  /* "_drainage.pyx":21
  *               [-1, 1, 0,  5, 11],
  *               [-1, 0,-1,  6, 16],
  *               [-1, 0, 1,  7, 15],             # <<<<<<<<<<<<<<
  *               [-1, 0, 0,  8, 17],
  *               [ 1,-1,-1,  9,  4],
  */
-  __pyx_t_10 = PyList_New(5); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 22, __pyx_L1_error)
+  __pyx_t_10 = PyList_New(5); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 21, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
   __Pyx_INCREF(__pyx_int_neg_1);
   __Pyx_GIVEREF(__pyx_int_neg_1);
@@ -19497,14 +20392,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_15);
   PyList_SET_ITEM(__pyx_t_10, 4, __pyx_int_15);
 
-  /* "_drainage.pyx":23
+  /* "_drainage.pyx":22
  *               [-1, 0,-1,  6, 16],
  *               [-1, 0, 1,  7, 15],
  *               [-1, 0, 0,  8, 17],             # <<<<<<<<<<<<<<
  *               [ 1,-1,-1,  9,  4],
  *               [ 1,-1, 1, 10,  3],
  */
-  __pyx_t_11 = PyList_New(5); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 23, __pyx_L1_error)
+  __pyx_t_11 = PyList_New(5); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 22, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   __Pyx_INCREF(__pyx_int_neg_1);
   __Pyx_GIVEREF(__pyx_int_neg_1);
@@ -19522,14 +20417,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_17);
   PyList_SET_ITEM(__pyx_t_11, 4, __pyx_int_17);
 
-  /* "_drainage.pyx":24
+  /* "_drainage.pyx":23
  *               [-1, 0, 1,  7, 15],
  *               [-1, 0, 0,  8, 17],
  *               [ 1,-1,-1,  9,  4],             # <<<<<<<<<<<<<<
  *               [ 1,-1, 1, 10,  3],
  *               [ 1,-1, 0, 11,  5],
  */
-  __pyx_t_12 = PyList_New(5); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 24, __pyx_L1_error)
+  __pyx_t_12 = PyList_New(5); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 23, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_12);
   __Pyx_INCREF(__pyx_int_1);
   __Pyx_GIVEREF(__pyx_int_1);
@@ -19547,14 +20442,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_4);
   PyList_SET_ITEM(__pyx_t_12, 4, __pyx_int_4);
 
-  /* "_drainage.pyx":25
+  /* "_drainage.pyx":24
  *               [-1, 0, 0,  8, 17],
  *               [ 1,-1,-1,  9,  4],
  *               [ 1,-1, 1, 10,  3],             # <<<<<<<<<<<<<<
  *               [ 1,-1, 0, 11,  5],
  *               [ 1, 1,-1, 12,  1],
  */
-  __pyx_t_13 = PyList_New(5); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 25, __pyx_L1_error)
+  __pyx_t_13 = PyList_New(5); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 24, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_13);
   __Pyx_INCREF(__pyx_int_1);
   __Pyx_GIVEREF(__pyx_int_1);
@@ -19572,14 +20467,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_3);
   PyList_SET_ITEM(__pyx_t_13, 4, __pyx_int_3);
 
-  /* "_drainage.pyx":26
+  /* "_drainage.pyx":25
  *               [ 1,-1,-1,  9,  4],
  *               [ 1,-1, 1, 10,  3],
  *               [ 1,-1, 0, 11,  5],             # <<<<<<<<<<<<<<
  *               [ 1, 1,-1, 12,  1],
  *               [ 1, 1, 1, 13,  0],
  */
-  __pyx_t_14 = PyList_New(5); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 26, __pyx_L1_error)
+  __pyx_t_14 = PyList_New(5); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 25, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __Pyx_INCREF(__pyx_int_1);
   __Pyx_GIVEREF(__pyx_int_1);
@@ -19597,14 +20492,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_5);
   PyList_SET_ITEM(__pyx_t_14, 4, __pyx_int_5);
 
-  /* "_drainage.pyx":27
+  /* "_drainage.pyx":26
  *               [ 1,-1, 1, 10,  3],
  *               [ 1,-1, 0, 11,  5],
  *               [ 1, 1,-1, 12,  1],             # <<<<<<<<<<<<<<
  *               [ 1, 1, 1, 13,  0],
  *               [ 1, 1, 0, 14,  2],
  */
-  __pyx_t_15 = PyList_New(5); if (unlikely(!__pyx_t_15)) __PYX_ERR(0, 27, __pyx_L1_error)
+  __pyx_t_15 = PyList_New(5); if (unlikely(!__pyx_t_15)) __PYX_ERR(0, 26, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_15);
   __Pyx_INCREF(__pyx_int_1);
   __Pyx_GIVEREF(__pyx_int_1);
@@ -19622,14 +20517,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_1);
   PyList_SET_ITEM(__pyx_t_15, 4, __pyx_int_1);
 
-  /* "_drainage.pyx":28
+  /* "_drainage.pyx":27
  *               [ 1,-1, 0, 11,  5],
  *               [ 1, 1,-1, 12,  1],
  *               [ 1, 1, 1, 13,  0],             # <<<<<<<<<<<<<<
  *               [ 1, 1, 0, 14,  2],
  *               [ 1, 0,-1, 15,  7],
  */
-  __pyx_t_16 = PyList_New(5); if (unlikely(!__pyx_t_16)) __PYX_ERR(0, 28, __pyx_L1_error)
+  __pyx_t_16 = PyList_New(5); if (unlikely(!__pyx_t_16)) __PYX_ERR(0, 27, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_16);
   __Pyx_INCREF(__pyx_int_1);
   __Pyx_GIVEREF(__pyx_int_1);
@@ -19647,14 +20542,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_0);
   PyList_SET_ITEM(__pyx_t_16, 4, __pyx_int_0);
 
-  /* "_drainage.pyx":29
+  /* "_drainage.pyx":28
  *               [ 1, 1,-1, 12,  1],
  *               [ 1, 1, 1, 13,  0],
  *               [ 1, 1, 0, 14,  2],             # <<<<<<<<<<<<<<
  *               [ 1, 0,-1, 15,  7],
  *               [ 1, 0, 1, 16,  6],
  */
-  __pyx_t_17 = PyList_New(5); if (unlikely(!__pyx_t_17)) __PYX_ERR(0, 29, __pyx_L1_error)
+  __pyx_t_17 = PyList_New(5); if (unlikely(!__pyx_t_17)) __PYX_ERR(0, 28, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_17);
   __Pyx_INCREF(__pyx_int_1);
   __Pyx_GIVEREF(__pyx_int_1);
@@ -19672,14 +20567,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_2);
   PyList_SET_ITEM(__pyx_t_17, 4, __pyx_int_2);
 
-  /* "_drainage.pyx":30
+  /* "_drainage.pyx":29
  *               [ 1, 1, 1, 13,  0],
  *               [ 1, 1, 0, 14,  2],
  *               [ 1, 0,-1, 15,  7],             # <<<<<<<<<<<<<<
  *               [ 1, 0, 1, 16,  6],
  *               [ 1, 0, 0, 17,  8],
  */
-  __pyx_t_18 = PyList_New(5); if (unlikely(!__pyx_t_18)) __PYX_ERR(0, 30, __pyx_L1_error)
+  __pyx_t_18 = PyList_New(5); if (unlikely(!__pyx_t_18)) __PYX_ERR(0, 29, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_18);
   __Pyx_INCREF(__pyx_int_1);
   __Pyx_GIVEREF(__pyx_int_1);
@@ -19697,14 +20592,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_7);
   PyList_SET_ITEM(__pyx_t_18, 4, __pyx_int_7);
 
-  /* "_drainage.pyx":31
+  /* "_drainage.pyx":30
  *               [ 1, 1, 0, 14,  2],
  *               [ 1, 0,-1, 15,  7],
  *               [ 1, 0, 1, 16,  6],             # <<<<<<<<<<<<<<
  *               [ 1, 0, 0, 17,  8],
  *               [ 0,-1,-1, 18, 22],
  */
-  __pyx_t_19 = PyList_New(5); if (unlikely(!__pyx_t_19)) __PYX_ERR(0, 31, __pyx_L1_error)
+  __pyx_t_19 = PyList_New(5); if (unlikely(!__pyx_t_19)) __PYX_ERR(0, 30, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_19);
   __Pyx_INCREF(__pyx_int_1);
   __Pyx_GIVEREF(__pyx_int_1);
@@ -19722,14 +20617,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_6);
   PyList_SET_ITEM(__pyx_t_19, 4, __pyx_int_6);
 
-  /* "_drainage.pyx":32
+  /* "_drainage.pyx":31
  *               [ 1, 0,-1, 15,  7],
  *               [ 1, 0, 1, 16,  6],
  *               [ 1, 0, 0, 17,  8],             # <<<<<<<<<<<<<<
  *               [ 0,-1,-1, 18, 22],
  *               [ 0,-1, 1, 19, 21],
  */
-  __pyx_t_20 = PyList_New(5); if (unlikely(!__pyx_t_20)) __PYX_ERR(0, 32, __pyx_L1_error)
+  __pyx_t_20 = PyList_New(5); if (unlikely(!__pyx_t_20)) __PYX_ERR(0, 31, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_20);
   __Pyx_INCREF(__pyx_int_1);
   __Pyx_GIVEREF(__pyx_int_1);
@@ -19747,14 +20642,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_8);
   PyList_SET_ITEM(__pyx_t_20, 4, __pyx_int_8);
 
-  /* "_drainage.pyx":33
+  /* "_drainage.pyx":32
  *               [ 1, 0, 1, 16,  6],
  *               [ 1, 0, 0, 17,  8],
  *               [ 0,-1,-1, 18, 22],             # <<<<<<<<<<<<<<
  *               [ 0,-1, 1, 19, 21],
  *               [ 0,-1, 0, 20, 23],
  */
-  __pyx_t_21 = PyList_New(5); if (unlikely(!__pyx_t_21)) __PYX_ERR(0, 33, __pyx_L1_error)
+  __pyx_t_21 = PyList_New(5); if (unlikely(!__pyx_t_21)) __PYX_ERR(0, 32, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_21);
   __Pyx_INCREF(__pyx_int_0);
   __Pyx_GIVEREF(__pyx_int_0);
@@ -19772,14 +20667,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_22);
   PyList_SET_ITEM(__pyx_t_21, 4, __pyx_int_22);
 
-  /* "_drainage.pyx":34
+  /* "_drainage.pyx":33
  *               [ 1, 0, 0, 17,  8],
  *               [ 0,-1,-1, 18, 22],
  *               [ 0,-1, 1, 19, 21],             # <<<<<<<<<<<<<<
  *               [ 0,-1, 0, 20, 23],
  *               [ 0, 1,-1, 21, 19],
  */
-  __pyx_t_22 = PyList_New(5); if (unlikely(!__pyx_t_22)) __PYX_ERR(0, 34, __pyx_L1_error)
+  __pyx_t_22 = PyList_New(5); if (unlikely(!__pyx_t_22)) __PYX_ERR(0, 33, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_22);
   __Pyx_INCREF(__pyx_int_0);
   __Pyx_GIVEREF(__pyx_int_0);
@@ -19797,14 +20692,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_21);
   PyList_SET_ITEM(__pyx_t_22, 4, __pyx_int_21);
 
-  /* "_drainage.pyx":35
+  /* "_drainage.pyx":34
  *               [ 0,-1,-1, 18, 22],
  *               [ 0,-1, 1, 19, 21],
  *               [ 0,-1, 0, 20, 23],             # <<<<<<<<<<<<<<
  *               [ 0, 1,-1, 21, 19],
  *               [ 0, 1, 1, 22, 18],
  */
-  __pyx_t_23 = PyList_New(5); if (unlikely(!__pyx_t_23)) __PYX_ERR(0, 35, __pyx_L1_error)
+  __pyx_t_23 = PyList_New(5); if (unlikely(!__pyx_t_23)) __PYX_ERR(0, 34, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_23);
   __Pyx_INCREF(__pyx_int_0);
   __Pyx_GIVEREF(__pyx_int_0);
@@ -19822,14 +20717,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_23);
   PyList_SET_ITEM(__pyx_t_23, 4, __pyx_int_23);
 
-  /* "_drainage.pyx":36
+  /* "_drainage.pyx":35
  *               [ 0,-1, 1, 19, 21],
  *               [ 0,-1, 0, 20, 23],
  *               [ 0, 1,-1, 21, 19],             # <<<<<<<<<<<<<<
  *               [ 0, 1, 1, 22, 18],
  *               [ 0, 1, 0, 23, 20],
  */
-  __pyx_t_24 = PyList_New(5); if (unlikely(!__pyx_t_24)) __PYX_ERR(0, 36, __pyx_L1_error)
+  __pyx_t_24 = PyList_New(5); if (unlikely(!__pyx_t_24)) __PYX_ERR(0, 35, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_24);
   __Pyx_INCREF(__pyx_int_0);
   __Pyx_GIVEREF(__pyx_int_0);
@@ -19847,14 +20742,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_19);
   PyList_SET_ITEM(__pyx_t_24, 4, __pyx_int_19);
 
-  /* "_drainage.pyx":37
+  /* "_drainage.pyx":36
  *               [ 0,-1, 0, 20, 23],
  *               [ 0, 1,-1, 21, 19],
  *               [ 0, 1, 1, 22, 18],             # <<<<<<<<<<<<<<
  *               [ 0, 1, 0, 23, 20],
  *               [ 0, 0,-1, 24, 25],
  */
-  __pyx_t_25 = PyList_New(5); if (unlikely(!__pyx_t_25)) __PYX_ERR(0, 37, __pyx_L1_error)
+  __pyx_t_25 = PyList_New(5); if (unlikely(!__pyx_t_25)) __PYX_ERR(0, 36, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_25);
   __Pyx_INCREF(__pyx_int_0);
   __Pyx_GIVEREF(__pyx_int_0);
@@ -19872,14 +20767,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_18);
   PyList_SET_ITEM(__pyx_t_25, 4, __pyx_int_18);
 
-  /* "_drainage.pyx":38
+  /* "_drainage.pyx":37
  *               [ 0, 1,-1, 21, 19],
  *               [ 0, 1, 1, 22, 18],
  *               [ 0, 1, 0, 23, 20],             # <<<<<<<<<<<<<<
  *               [ 0, 0,-1, 24, 25],
  *               [ 0, 0, 1, 25, 24]],dtype=np.int8)
  */
-  __pyx_t_26 = PyList_New(5); if (unlikely(!__pyx_t_26)) __PYX_ERR(0, 38, __pyx_L1_error)
+  __pyx_t_26 = PyList_New(5); if (unlikely(!__pyx_t_26)) __PYX_ERR(0, 37, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_26);
   __Pyx_INCREF(__pyx_int_0);
   __Pyx_GIVEREF(__pyx_int_0);
@@ -19897,14 +20792,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_20);
   PyList_SET_ITEM(__pyx_t_26, 4, __pyx_int_20);
 
-  /* "_drainage.pyx":39
+  /* "_drainage.pyx":38
  *               [ 0, 1, 1, 22, 18],
  *               [ 0, 1, 0, 23, 20],
  *               [ 0, 0,-1, 24, 25],             # <<<<<<<<<<<<<<
  *               [ 0, 0, 1, 25, 24]],dtype=np.int8)
  * 
  */
-  __pyx_t_27 = PyList_New(5); if (unlikely(!__pyx_t_27)) __PYX_ERR(0, 39, __pyx_L1_error)
+  __pyx_t_27 = PyList_New(5); if (unlikely(!__pyx_t_27)) __PYX_ERR(0, 38, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_27);
   __Pyx_INCREF(__pyx_int_0);
   __Pyx_GIVEREF(__pyx_int_0);
@@ -19922,14 +20817,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_25);
   PyList_SET_ITEM(__pyx_t_27, 4, __pyx_int_25);
 
-  /* "_drainage.pyx":40
+  /* "_drainage.pyx":39
  *               [ 0, 1, 0, 23, 20],
  *               [ 0, 0,-1, 24, 25],
  *               [ 0, 0, 1, 25, 24]],dtype=np.int8)             # <<<<<<<<<<<<<<
  * 
  * cdef cnp.int8_t [:,:] directions
  */
-  __pyx_t_28 = PyList_New(5); if (unlikely(!__pyx_t_28)) __PYX_ERR(0, 40, __pyx_L1_error)
+  __pyx_t_28 = PyList_New(5); if (unlikely(!__pyx_t_28)) __PYX_ERR(0, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_28);
   __Pyx_INCREF(__pyx_int_0);
   __Pyx_GIVEREF(__pyx_int_0);
@@ -19947,14 +20842,14 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_int_24);
   PyList_SET_ITEM(__pyx_t_28, 4, __pyx_int_24);
 
-  /* "_drainage.pyx":15
+  /* "_drainage.pyx":14
  * 
  * cdef int numDirections = 26
  * _directions =  np.array([[-1,-1,-1,  0, 13],             # <<<<<<<<<<<<<<
  *               [-1,-1, 1,  1, 12],
  *               [-1,-1, 0,  2, 14],
  */
-  __pyx_t_29 = PyList_New(26); if (unlikely(!__pyx_t_29)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_t_29 = PyList_New(26); if (unlikely(!__pyx_t_29)) __PYX_ERR(0, 14, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_29);
   __Pyx_GIVEREF(__pyx_t_1);
   PyList_SET_ITEM(__pyx_t_29, 0, __pyx_t_1);
@@ -20034,82 +20929,94 @@ if (!__Pyx_RefNanny) {
   __pyx_t_26 = 0;
   __pyx_t_27 = 0;
   __pyx_t_28 = 0;
-  __pyx_t_28 = PyTuple_New(1); if (unlikely(!__pyx_t_28)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_t_28 = PyTuple_New(1); if (unlikely(!__pyx_t_28)) __PYX_ERR(0, 14, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_28);
   __Pyx_GIVEREF(__pyx_t_29);
   PyTuple_SET_ITEM(__pyx_t_28, 0, __pyx_t_29);
   __pyx_t_29 = 0;
 
-  /* "_drainage.pyx":40
+  /* "_drainage.pyx":39
  *               [ 0, 1, 0, 23, 20],
  *               [ 0, 0,-1, 24, 25],
  *               [ 0, 0, 1, 25, 24]],dtype=np.int8)             # <<<<<<<<<<<<<<
  * 
  * cdef cnp.int8_t [:,:] directions
  */
-  __pyx_t_29 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_29)) __PYX_ERR(0, 40, __pyx_L1_error)
+  __pyx_t_29 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_29)) __PYX_ERR(0, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_29);
-  __Pyx_GetModuleGlobalName(__pyx_t_27, __pyx_n_s_np); if (unlikely(!__pyx_t_27)) __PYX_ERR(0, 40, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_27, __pyx_n_s_np); if (unlikely(!__pyx_t_27)) __PYX_ERR(0, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_27);
-  __pyx_t_26 = __Pyx_PyObject_GetAttrStr(__pyx_t_27, __pyx_n_s_int8); if (unlikely(!__pyx_t_26)) __PYX_ERR(0, 40, __pyx_L1_error)
+  __pyx_t_26 = __Pyx_PyObject_GetAttrStr(__pyx_t_27, __pyx_n_s_int8); if (unlikely(!__pyx_t_26)) __PYX_ERR(0, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_26);
   __Pyx_DECREF(__pyx_t_27); __pyx_t_27 = 0;
-  if (PyDict_SetItem(__pyx_t_29, __pyx_n_s_dtype, __pyx_t_26) < 0) __PYX_ERR(0, 40, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_29, __pyx_n_s_dtype, __pyx_t_26) < 0) __PYX_ERR(0, 39, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_26); __pyx_t_26 = 0;
 
-  /* "_drainage.pyx":15
+  /* "_drainage.pyx":14
  * 
  * cdef int numDirections = 26
  * _directions =  np.array([[-1,-1,-1,  0, 13],             # <<<<<<<<<<<<<<
  *               [-1,-1, 1,  1, 12],
  *               [-1,-1, 0,  2, 14],
  */
-  __pyx_t_26 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_28, __pyx_t_29); if (unlikely(!__pyx_t_26)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_t_26 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_28, __pyx_t_29); if (unlikely(!__pyx_t_26)) __PYX_ERR(0, 14, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_26);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_28); __pyx_t_28 = 0;
   __Pyx_DECREF(__pyx_t_29); __pyx_t_29 = 0;
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_directions, __pyx_t_26) < 0) __PYX_ERR(0, 15, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_directions, __pyx_t_26) < 0) __PYX_ERR(0, 14, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_26); __pyx_t_26 = 0;
 
-  /* "_drainage.pyx":43
+  /* "_drainage.pyx":42
  * 
  * cdef cnp.int8_t [:,:] directions
  * directions = _directions             # <<<<<<<<<<<<<<
  * 
- * # directions ={0 :{'ID':[-1,-1,-1],'index': 0 ,'oppIndex':  13},
+ * 
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_26, __pyx_n_s_directions); if (unlikely(!__pyx_t_26)) __PYX_ERR(0, 43, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_26, __pyx_n_s_directions); if (unlikely(!__pyx_t_26)) __PYX_ERR(0, 42, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_26);
-  __pyx_t_30 = __Pyx_PyObject_to_MemoryviewSlice_dsds_nn___pyx_t_5numpy_int8_t(__pyx_t_26, PyBUF_WRITABLE); if (unlikely(!__pyx_t_30.memview)) __PYX_ERR(0, 43, __pyx_L1_error)
+  __pyx_t_30 = __Pyx_PyObject_to_MemoryviewSlice_dsds_nn___pyx_t_5numpy_int8_t(__pyx_t_26, PyBUF_WRITABLE); if (unlikely(!__pyx_t_30.memview)) __PYX_ERR(0, 42, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_26); __pyx_t_26 = 0;
   __PYX_XDEC_MEMVIEW(&__pyx_v_9_drainage_directions, 1);
   __pyx_v_9_drainage_directions = __pyx_t_30;
   __pyx_t_30.memview = NULL;
   __pyx_t_30.data = NULL;
 
-  /* "_drainage.pyx":74
+  /* "_drainage.pyx":46
  * 
  * 
  * def _getDirection3D(self,             # <<<<<<<<<<<<<<
  *                     int ID,
  *                     list _localIndex,
  */
-  __pyx_t_26 = PyCFunction_NewEx(&__pyx_mdef_9_drainage_1_getDirection3D, NULL, __pyx_n_s_drainage); if (unlikely(!__pyx_t_26)) __PYX_ERR(0, 74, __pyx_L1_error)
+  __pyx_t_26 = PyCFunction_NewEx(&__pyx_mdef_9_drainage_1_getDirection3D, NULL, __pyx_n_s_drainage); if (unlikely(!__pyx_t_26)) __PYX_ERR(0, 46, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_26);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_getDirection3D, __pyx_t_26) < 0) __PYX_ERR(0, 74, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_getDirection3D, __pyx_t_26) < 0) __PYX_ERR(0, 46, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_26); __pyx_t_26 = 0;
 
-  /* "_drainage.pyx":121
+  /* "_drainage.pyx":87
  * 
  * 
  * def  _genNodeDirections(self,             # <<<<<<<<<<<<<<
  *                         cnp.ndarray[cnp.uint8_t, ndim=3] _ind):
  * 
  */
-  __pyx_t_26 = PyCFunction_NewEx(&__pyx_mdef_9_drainage_3_genNodeDirections, NULL, __pyx_n_s_drainage); if (unlikely(!__pyx_t_26)) __PYX_ERR(0, 121, __pyx_L1_error)
+  __pyx_t_26 = PyCFunction_NewEx(&__pyx_mdef_9_drainage_3_genNodeDirections, NULL, __pyx_n_s_drainage); if (unlikely(!__pyx_t_26)) __PYX_ERR(0, 87, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_26);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_genNodeDirections, __pyx_t_26) < 0) __PYX_ERR(0, 121, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_genNodeDirections, __pyx_t_26) < 0) __PYX_ERR(0, 87, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_26); __pyx_t_26 = 0;
+
+  /* "_drainage.pyx":137
+ *               c = c + 1
+ * 
+ * def  _genNodeInfo(self):             # <<<<<<<<<<<<<<
+ *   pass
+ * 
+ */
+  __pyx_t_26 = PyCFunction_NewEx(&__pyx_mdef_9_drainage_5_genNodeInfo, NULL, __pyx_n_s_drainage); if (unlikely(!__pyx_t_26)) __PYX_ERR(0, 137, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_26);
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_genNodeInfo, __pyx_t_26) < 0) __PYX_ERR(0, 137, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_26); __pyx_t_26 = 0;
 
   /* "_drainage.pyx":1
@@ -20142,7 +21049,7 @@ if (!__Pyx_RefNanny) {
  * cdef strided = Enum("<strided and direct>") # default
  * cdef indirect = Enum("<strided and indirect>")
  */
-  __pyx_t_26 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__25, NULL); if (unlikely(!__pyx_t_26)) __PYX_ERR(2, 286, __pyx_L1_error)
+  __pyx_t_26 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__27, NULL); if (unlikely(!__pyx_t_26)) __PYX_ERR(2, 286, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_26);
   __Pyx_XGOTREF(generic);
   __Pyx_DECREF_SET(generic, __pyx_t_26);
@@ -20156,7 +21063,7 @@ if (!__Pyx_RefNanny) {
  * cdef indirect = Enum("<strided and indirect>")
  * 
  */
-  __pyx_t_26 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__26, NULL); if (unlikely(!__pyx_t_26)) __PYX_ERR(2, 287, __pyx_L1_error)
+  __pyx_t_26 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__28, NULL); if (unlikely(!__pyx_t_26)) __PYX_ERR(2, 287, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_26);
   __Pyx_XGOTREF(strided);
   __Pyx_DECREF_SET(strided, __pyx_t_26);
@@ -20170,7 +21077,7 @@ if (!__Pyx_RefNanny) {
  * 
  * 
  */
-  __pyx_t_26 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__27, NULL); if (unlikely(!__pyx_t_26)) __PYX_ERR(2, 288, __pyx_L1_error)
+  __pyx_t_26 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__29, NULL); if (unlikely(!__pyx_t_26)) __PYX_ERR(2, 288, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_26);
   __Pyx_XGOTREF(indirect);
   __Pyx_DECREF_SET(indirect, __pyx_t_26);
@@ -20184,7 +21091,7 @@ if (!__Pyx_RefNanny) {
  * cdef indirect_contiguous = Enum("<contiguous and indirect>")
  * 
  */
-  __pyx_t_26 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__28, NULL); if (unlikely(!__pyx_t_26)) __PYX_ERR(2, 291, __pyx_L1_error)
+  __pyx_t_26 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__30, NULL); if (unlikely(!__pyx_t_26)) __PYX_ERR(2, 291, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_26);
   __Pyx_XGOTREF(contiguous);
   __Pyx_DECREF_SET(contiguous, __pyx_t_26);
@@ -20198,7 +21105,7 @@ if (!__Pyx_RefNanny) {
  * 
  * 
  */
-  __pyx_t_26 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__29, NULL); if (unlikely(!__pyx_t_26)) __PYX_ERR(2, 292, __pyx_L1_error)
+  __pyx_t_26 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__31, NULL); if (unlikely(!__pyx_t_26)) __PYX_ERR(2, 292, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_26);
   __Pyx_XGOTREF(indirect_contiguous);
   __Pyx_DECREF_SET(indirect_contiguous, __pyx_t_26);
@@ -21428,6 +22335,26 @@ static PyObject *__Pyx_PyObject_GetItem(PyObject *obj, PyObject* key) {
 }
 #endif
 
+/* PyObjectCall */
+  #if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_Call(PyObject *func, PyObject *arg, PyObject *kw) {
+    PyObject *result;
+    ternaryfunc call = Py_TYPE(func)->tp_call;
+    if (unlikely(!call))
+        return PyObject_Call(func, arg, kw);
+    if (unlikely(Py_EnterRecursiveCall((char*)" while calling a Python object")))
+        return NULL;
+    result = (*call)(func, arg, kw);
+    Py_LeaveRecursiveCall();
+    if (unlikely(!result) && unlikely(!PyErr_Occurred())) {
+        PyErr_SetString(
+            PyExc_SystemError,
+            "NULL result without error in PyObject_Call");
+    }
+    return result;
+}
+#endif
+
 /* GetTopmostException */
   #if CYTHON_USE_EXC_INFO_STACK
 static _PyErr_StackItem *
@@ -21582,26 +22509,6 @@ bad:
     Py_XDECREF(local_tb);
     return -1;
 }
-
-/* PyObjectCall */
-  #if CYTHON_COMPILING_IN_CPYTHON
-static CYTHON_INLINE PyObject* __Pyx_PyObject_Call(PyObject *func, PyObject *arg, PyObject *kw) {
-    PyObject *result;
-    ternaryfunc call = Py_TYPE(func)->tp_call;
-    if (unlikely(!call))
-        return PyObject_Call(func, arg, kw);
-    if (unlikely(Py_EnterRecursiveCall((char*)" while calling a Python object")))
-        return NULL;
-    result = (*call)(func, arg, kw);
-    Py_LeaveRecursiveCall();
-    if (unlikely(!result) && unlikely(!PyErr_Occurred())) {
-        PyErr_SetString(
-            PyExc_SystemError,
-            "NULL result without error in PyObject_Call");
-    }
-    return result;
-}
-#endif
 
 /* RaiseException */
   #if PY_MAJOR_VERSION < 3

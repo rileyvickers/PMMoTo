@@ -4,8 +4,6 @@ comm = MPI.COMM_WORLD
 
 def subDomainComm(Orientation,subDomain,sendData):
 
-    comm.Barrier()
-
     #### FACE ####
     reqs = [None]*Orientation.numFaces
     reqr = [None]*Orientation.numFaces

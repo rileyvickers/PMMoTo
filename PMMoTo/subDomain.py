@@ -28,14 +28,7 @@ class Orientation(object):
         self.sendCSlices = np.empty([self.numCorners,3],dtype=object)
         self.recvCSlices = np.empty([self.numCorners,3],dtype=object)
 
-        self.faces = {0:{'ID':(1,0,0),  'oppIndex':1, 'nC':0, 'nM':1, 'nN':2, 'dir':-1},
-                      1:{'ID':(-1,0,0), 'oppIndex':0, 'nC':0, 'nM':1, 'nN':2, 'dir':1},
-                      2:{'ID':(0,1,0),  'oppIndex':3, 'nC':1, 'nM':0, 'nN':2, 'dir':-1},
-                      3:{'ID':(0,-1,0), 'oppIndex':2, 'nC':1, 'nM':0, 'nN':2, 'dir':1},
-                      4:{'ID':(0,0,1),  'oppIndex':5, 'nC':2, 'nM':0, 'nN':1, 'dir':-1},
-                      5:{'ID':(0,0,-1), 'oppIndex':4, 'nC':2, 'nM':0, 'nN':1, 'dir':1},
-                      }
-        self.facesN= {0:{'ID':(1,0,0),  'oppIndex':1, 'argOrder':np.array([0,1,2],dtype=np.uint8), 'dir':-1},
+        self.faces=  {0:{'ID':(1,0,0),  'oppIndex':1, 'argOrder':np.array([0,1,2],dtype=np.uint8), 'dir':-1},
                       1:{'ID':(-1,0,0), 'oppIndex':0, 'argOrder':np.array([0,1,2],dtype=np.uint8), 'dir':1},
                       2:{'ID':(0,1,0),  'oppIndex':3, 'argOrder':np.array([1,0,2],dtype=np.uint8), 'dir':-1},
                       3:{'ID':(0,-1,0), 'oppIndex':2, 'argOrder':np.array([1,0,2],dtype=np.uint8), 'dir':1},
@@ -209,7 +202,7 @@ class Orientation(object):
                     self.recvCSlices[cIndex,n] = slice(None,structRatio[n])
 
 class Domain(object):
-    def __init__(self,nodes,domainSize,subDomains,periodic):
+    def __init__(self,nodes,domainSize,subDomains,periodic,inlet=[0,0,0],outlet=[0,0,0]):
         self.nodes        = nodes
         self.domainSize   = domainSize
         self.periodic     = periodic
@@ -217,6 +210,8 @@ class Domain(object):
         self.subNodes     = np.zeros([3])
         self.subNodesRem  = np.zeros([3])
         self.domainLength = np.zeros([3])
+        self.inlet = inlet
+        self.outlet = outlet
         self.dX = 0
         self.dY = 0
         self.dZ = 0
@@ -251,18 +246,22 @@ class subDomain(object):
         self.lookUpID    = np.zeros(subDomains,dtype=np.int64)
         self.buffer      = bufferSize*np.ones([3,2],dtype = np.int64)
         self.numSubDomains = np.prod(subDomains)
-        self.neighborF    = -np.ones(6,dtype = np.int64)
-        self.neighborE    = -np.ones(12,dtype = np.int64)
-        self.neighborC    = -np.ones(8,dtype = np.int64)
-        self.neighborPerF =  np.zeros([6,3],dtype = np.int64)
-        self.neighborPerE =  np.zeros([12,3],dtype = np.int64)
-        self.neighborPerC =  np.zeros([8,3],dtype = np.int64)
+        self.neighborF    = -np.ones(self.Orientation.numFaces,dtype = np.int64)
+        self.neighborE    = -np.ones(self.Orientation.numEdges,dtype = np.int64)
+        self.neighborC    = -np.ones(self.Orientation.numCorners,dtype = np.int64)
+        self.neighborPerF =  np.zeros([self.Orientation.numFaces,3],dtype = np.int64)
+        self.neighborPerE =  np.zeros([self.Orientation.numEdges,3],dtype = np.int64)
+        self.neighborPerC =  np.zeros([self.Orientation.numCorners,3],dtype = np.int64)
         self.ownNodes     = np.zeros([3,2],dtype = np.int64)
         self.ownNodesTotal= 0
         self.poreNodes    = 0
         self.totalPoreNodes = np.zeros(1,dtype=np.uint64)
         self.subDomainSize = np.zeros([3,1])
         self.grid = None
+        self.globalBoundary = np.zeros([self.Orientation.numFaces],dtype = np.uint8)
+        self.inlet = np.zeros([self.Orientation.numFaces],dtype = np.uint8)
+        self.outlet = np.zeros([self.Orientation.numFaces],dtype = np.uint8)
+        self.loopInfo = np.zeros([self.Orientation.numFaces+1,3,3],dtype = np.int64)
 
     def getInfo(self):
         n = 0
@@ -381,6 +380,64 @@ class subDomain(object):
             print("This code requires at least 1 solid voxel in each subdomain. Please reorder processors!")
             sys.exit()
 
+    def getBoundaryInfo(self):
+
+        rangeInfo = 2*np.ones([3,2],dtype=np.uint8)
+        if self.boundaryID[0] == -1 and not self.Domain.periodic[0]:
+            rangeInfo[0,0] = rangeInfo[0,0] - 1
+        if self.boundaryID[0] ==  1 and not self.Domain.periodic[0]:
+            rangeInfo[0,1] = rangeInfo[0,1] - 1
+        if self.boundaryID[1] == -1 and not self.Domain.periodic[1]:
+            rangeInfo[1,0] = rangeInfo[1,0] - 1
+        if self.boundaryID[1] ==  1 and not self.Domain.periodic[1]:
+            rangeInfo[1,1] = rangeInfo[1,1] - 1
+        if self.boundaryID[2] == -1 and not self.Domain.periodic[2]:
+            rangeInfo[2,0] = rangeInfo[2,0] - 1
+        if self.boundaryID[2] ==  1 and not self.Domain.periodic[2]:
+            rangeInfo[2,1] = rangeInfo[2,1] - 1
+
+        for fIndex in self.Orientation.faces:
+            face = self.Orientation.faces[fIndex]['argOrder'][0]
+            fID = self.Orientation.faces[fIndex]['ID'][face]
+            if self.boundaryID[face] != 0:
+                self.globalBoundary[fIndex] = 1
+                if self.Domain.inlet[face] == fID and self.Domain.inlet[face] == self.boundaryID[face]:
+                    self.inlet[fIndex] = True
+                elif self.Domain.outlet[face] == fID and self.Domain.outlet[face] == self.boundaryID[face]:
+                    self.outlet[fIndex] = True
+
+            if self.Orientation.faces[fIndex]['dir'] == -1:
+                if face == 0:
+                    self.loopInfo[fIndex,0] = [self.grid.shape[0]-1,self.grid.shape[0]-rangeInfo[0,1]-1,-1]
+                    self.loopInfo[fIndex,1] = [0,self.grid.shape[1],1]
+                    self.loopInfo[fIndex,2] = [0,self.grid.shape[2],1]
+                elif face == 1:
+                    self.loopInfo[fIndex,0] = [rangeInfo[0,0],self.grid.shape[0]-rangeInfo[0,1],1]
+                    self.loopInfo[fIndex,1] = [self.grid.shape[1]-1,self.grid.shape[1]-rangeInfo[1,1]-1,-1]
+                    self.loopInfo[fIndex,2] = [0,self.grid.shape[2],1]
+                elif face == 2:
+                    self.loopInfo[fIndex,0] = [rangeInfo[0,0],self.grid.shape[0]-rangeInfo[0,1],1]
+                    self.loopInfo[fIndex,1] = [rangeInfo[1,0],self.grid.shape[1]-rangeInfo[1,1],1]
+                    self.loopInfo[fIndex,2] = [self.grid.shape[2]-1,self.grid.shape[2]-rangeInfo[2,1]-1,-1]
+
+            elif self.Orientation.faces[fIndex]['dir'] == 1:
+                if face == 0:
+                    self.loopInfo[fIndex,0] = [0,rangeInfo[0,0],1]
+                    self.loopInfo[fIndex,1] = [0,self.grid.shape[1],1]
+                    self.loopInfo[fIndex,2] = [0,self.grid.shape[2],1]
+                elif face == 1:
+                    self.loopInfo[fIndex,0] = [rangeInfo[0,0],self.grid.shape[0]-rangeInfo[0,1],1]
+                    self.loopInfo[fIndex,1] = [0,rangeInfo[1,0],1]
+                    self.loopInfo[fIndex,2] = [0,self.grid.shape[2],1]
+                elif face == 2:
+                    self.loopInfo[fIndex,0] = [rangeInfo[0,0],self.grid.shape[0]-rangeInfo[0,1],1]
+                    self.loopInfo[fIndex,1] = [rangeInfo[1,0],self.grid.shape[1]-rangeInfo[1,1],1]
+                    self.loopInfo[fIndex,2] = [0,rangeInfo[2,0],1]
+
+        self.loopInfo[self.Orientation.numFaces][0] = [rangeInfo[0,0],self.grid.shape[0]-rangeInfo[0,1],1]
+        self.loopInfo[self.Orientation.numFaces][1] = [rangeInfo[1,0],self.grid.shape[1]-rangeInfo[1,1],1]
+        self.loopInfo[self.Orientation.numFaces][2] = [rangeInfo[2,0],self.grid.shape[2]-rangeInfo[2,1],1]
+
     def getNeighbors(self):
         """
         Get the Face,Edge, and Corner Neighbors for Each Domain
@@ -452,8 +509,7 @@ class subDomain(object):
                              own[2][0]:own[2][1]]
         self.poreNodes = np.sum(ownGrid)
 
-def genDomainSubDomain(rank,size,subDomains,nodes,periodic,dataFormat,domainFile,dataRead):
-
+def genDomainSubDomain(rank,size,subDomains,nodes,periodic,inlet,outlet,dataFormat,domainFile,dataRead):
 
     numSubDomains = np.prod(subDomains)
     if rank == 0:
@@ -469,7 +525,7 @@ def genDomainSubDomain(rank,size,subDomains,nodes,periodic,dataFormat,domainFile
     if domainFile is None:
         #domainSize = np.array([[0,nodes[0]],[0,nodes[1]],[0,nodes[2]]])
         domainSize = np.array([[0.,14.],[-1.5,1.5],[-1.5,1.5]])
-    domain = Domain(nodes = nodes, domainSize = domainSize, subDomains = subDomains, periodic = periodic)
+    domain = Domain(nodes = nodes, domainSize = domainSize, subDomains = subDomains, periodic = periodic, inlet=inlet, outlet=outlet)
     domain.getdXYZ()
     domain.getSubNodes()
 
@@ -485,7 +541,7 @@ def genDomainSubDomain(rank,size,subDomains,nodes,periodic,dataFormat,domainFile
         sD.genDomainSphereData(sphereData)
     if dataFormat == "InkBotle":
         sD.genDomainInkBottle()
-
+    sD.getBoundaryInfo()
     sD.getPorosity()
     comm.Allreduce( [sD.poreNodes, MPI.INT], [sD.totalPoreNodes, MPI.INT], op = MPI.SUM )
 

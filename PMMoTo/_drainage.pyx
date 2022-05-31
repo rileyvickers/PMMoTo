@@ -10,7 +10,6 @@ cimport numpy as cnp
 from libc.stdio cimport printf
 cnp.import_array()
 
-
 cdef int numDirections = 26
 _directions =  np.array([[-1,-1,-1,  0, 13],
               [-1,-1, 1,  1, 12],
@@ -42,33 +41,6 @@ _directions =  np.array([[-1,-1,-1,  0, 13],
 cdef cnp.int8_t [:,:] directions
 directions = _directions
 
-# directions ={0 :{'ID':[-1,-1,-1],'index': 0 ,'oppIndex':  13},
-#                       1 :{'ID':[-1,-1, 1],'index': 1 ,'oppIndex':  12},
-#                       2 :{'ID':[-1,-1, 0],'index': 2 ,'oppIndex':  14},
-#                       3 :{'ID':[-1, 1,-1],'index': 3 ,'oppIndex':  10},
-#                       4 :{'ID':[-1, 1, 1],'index': 4 ,'oppIndex':   9},
-#                       5 :{'ID':[-1, 1, 0],'index': 5 ,'oppIndex':  11},
-#                       6 :{'ID':[-1, 0,-1],'index': 6 ,'oppIndex':  16},
-#                       7 :{'ID':[-1, 0, 1],'index': 7 ,'oppIndex':  15},
-#                       8 :{'ID':[-1, 0, 0],'index': 8 ,'oppIndex':  17},
-#                       9 :{'ID':[ 1,-1,-1],'index': 9 ,'oppIndex':   4},
-#                       10:{'ID':[ 1,-1, 1],'index': 10 ,'oppIndex':  3},
-#                       11:{'ID':[ 1,-1, 0],'index': 11 ,'oppIndex':  5},
-#                       12:{'ID':[ 1, 1,-1],'index': 12 ,'oppIndex':  1},
-#                       13:{'ID':[ 1, 1, 1],'index': 13 ,'oppIndex':  0},
-#                       14:{'ID':[ 1, 1, 0],'index': 14 ,'oppIndex':  2},
-#                       15:{'ID':[ 1, 0,-1],'index': 15 ,'oppIndex':  7},
-#                       16:{'ID':[ 1, 0, 1],'index': 16 ,'oppIndex':  6},
-#                       17:{'ID':[ 1, 0, 0],'index': 17 ,'oppIndex':  8},
-#                       18:{'ID':[ 0,-1,-1],'index': 18 ,'oppIndex': 22},
-#                       19:{'ID':[ 0,-1, 1],'index': 19 ,'oppIndex': 21},
-#                       20:{'ID':[ 0,-1, 0],'index': 20 ,'oppIndex': 23},
-#                       21:{'ID':[ 0, 1,-1],'index': 21 ,'oppIndex': 19},
-#                       22:{'ID':[ 0, 1, 1],'index': 22 ,'oppIndex': 18},
-#                       23:{'ID':[ 0, 1, 0],'index': 23 ,'oppIndex': 20},
-#                       24:{'ID':[ 0, 0,-1],'index': 24 ,'oppIndex': 25},
-#                       25:{'ID':[ 0, 0, 1],'index': 25 ,'oppIndex': 24},
-#                      }
 
 
 def _getDirection3D(self,
@@ -111,41 +83,131 @@ def _getDirection3D(self,
 
   return returnCell
 
-# def _validDirection(self,c):
-#       self.direction[c] = 1
-#
-# def _setNodeDirection(self,c,node):
-#       self.nodeDirection[c] = node
-
 
 def  _genNodeDirections(self,
                         cnp.ndarray[cnp.uint8_t, ndim=3] _ind):
 
   cdef int i,j,k,c,d,ii,jj,kk,availDirection
 
-  cdef int NX = _ind.shape[0]
-  cdef int NY = _ind.shape[1]
-  cdef int NZ = _ind.shape[2]
-
   c = 0
-  for i in range(1,NX-1):
-      for j in range(1,NY-1):
-          for k in range(1,NZ-1):
-              if (_ind[i,j,k] == 1):
-                  availDirection = 0
-                  for d in range(0,numDirections):
-                      ii = directions[d][0]
-                      jj = directions[d][1]
-                      kk = directions[d][2]
-                      if (_ind[i+ii,j+jj,k+kk] == 1):
-                          #self.nodeInfo[c].validDirection(d)
-                          self.nodeInfo[c].direction[d] = 1
-                          node = self.nodeTable[i+ii-1,j+jj-1,k+kk-1]
-                          #self.nodeInfo[c].setNodeDirection(d,node)
-                          self.nodeInfo[c].nodeDirection[d] = node
-                          availDirection += 1
+  for fIndex in self.Orientation.faces:
+      iL = self.subDomain.loopInfo[fIndex][0]
+      jL = self.subDomain.loopInfo[fIndex][1]
+      kL = self.subDomain.loopInfo[fIndex][2]
+      for i in range(iL[0],iL[1],iL[2]):
+          for j in range(jL[0],jL[1],jL[2]):
+              for k in range(kL[0],kL[1],kL[2]):
+                  if _ind[i+1,j+1,k+1] == 1:
+                    availDirection = 0
+                    for d in range(0,numDirections):
+                        ii = directions[d][0] + 1
+                        jj = directions[d][1] + 1
+                        kk = directions[d][2] + 1
+                        if (_ind[i+ii,j+jj,k+kk] == 1):
+                            self.nodeInfo[c].direction[d] = 1
+                            node = self.nodeTable[i+ii-1,j+jj-1,k+kk-1]
+                            self.nodeInfo[c].nodeDirection[d] = node
+                            availDirection += 1
 
-                  self.nodeInfo[c].availDirection = availDirection
-                  self.nodeInfo[c].saveDirection = self.nodeInfo[c].availDirection
+                    self.nodeInfo[c].availDirection = availDirection
+                    c = c + 1
 
-                  c = c + 1
+  innerID = self.Orientation.numFaces
+  iL = self.subDomain.loopInfo[innerID][0]
+  jL = self.subDomain.loopInfo[innerID][1]
+  kL = self.subDomain.loopInfo[innerID][2]
+  for i in range(iL[0],iL[1],iL[2]):
+      for j in range(jL[0],jL[1],jL[2]):
+          for k in range(kL[0],kL[1],kL[2]):
+            if _ind[i+1,j+1,k+1] == 1:
+              availDirection = 0
+              for d in range(0,numDirections):
+                  ii = directions[d][0] + 1
+                  jj = directions[d][1] + 1
+                  kk = directions[d][2] + 1
+                  if (_ind[i+ii,j+jj,k+kk] == 1):
+                      self.nodeInfo[c].direction[d] = 1
+                      node = self.nodeTable[i+ii-1,j+jj-1,k+kk-1]
+                      self.nodeInfo[c].nodeDirection[d] = node
+                      availDirection += 1
+
+              self.nodeInfo[c].availDirection = availDirection
+              c = c + 1
+
+def  _genNodeInfo(self):
+  pass
+
+  # c = 0
+  # for fIndex in self.Orientation.faces:
+  #     iL = self.subDomain.loopInfo[fIndex][0]
+  #     jL = self.subDomain.loopInfo[fIndex][1]
+  #     kL = self.subDomain.loopInfo[fIndex][2]
+  #     bID = list(self.Orientation.faces[fIndex]['ID'])
+  #     for i in range(iL[0],iL[1],iL[2]):
+  #         for j in range(jL[0],jL[1],jL[2]):
+  #             for k in range(kL[0],kL[1],kL[2]):
+  #                 if self.ind[i,j,k] == 1:
+  #
+  #                     iLoc = self.subDomain.indexStart[0]+i
+  #                     jLoc = self.subDomain.indexStart[1]+j
+  #                     kLoc = self.subDomain.indexStart[2]+k
+  #
+  #                     perFace  = self.subDomain.neighborPerF[fIndex]
+  #
+  #                     if perFace.any():
+  #                         if iLoc >= self.Domain.nodes[0]:
+  #                             iLoc = 0
+  #                         elif iLoc < 0:
+  #                             iLoc = self.Domain.nodes[0]-1
+  #                         if jLoc >= self.Domain.nodes[1]:
+  #                             jLoc = 0
+  #                         elif jLoc < 0:
+  #                             jLoc = self.Domain.nodes[1]-1
+  #                         if kLoc >= self.Domain.nodes[2]:
+  #                             kLoc = 0
+  #                         elif kLoc < 0:
+  #                             kLoc = self.Domain.nodes[2]-1
+  #                     globIndex = iLoc*self.Domain.nodes[1]*self.Domain.nodes[2] +  jLoc*self.Domain.nodes[2] +  kLoc
+  #
+  #                     boundaryID = bID.copy()
+  #                     if (i < 2):
+  #                         boundaryID[0] = -1
+  #                     elif (i >= self.ind.shape[0]-2):
+  #                         boundaryID[0] = 1
+  #                     if (j < 2):
+  #                         boundaryID[1] = -1
+  #                     elif (j >= self.ind.shape[1]-2):
+  #                         boundaryID[1] = 1
+  #                     if (k < 2):
+  #                         boundaryID[2] = -1
+  #                     elif(k >= self.ind.shape[2]-2):
+  #                         boundaryID[2] = 1
+  #
+  #                     self.nodeInfo[c] = Node(ID=c,
+  #                                             localIndex = [i,j,k],
+  #                                             globalIndex = globIndex,
+  #                                             boundary = True,
+  #                                             boundaryID = boundaryID,
+  #                                             inlet = self.subDomain.inlet[fIndex],
+  #                                             outlet = self.subDomain.outlet[fIndex])
+  #                     self.nodeTable[i,j,k] = c
+  #                     c = c + 1
+  #
+  # innerID = self.Orientation.numFaces
+  # iL = self.subDomain.loopInfo[innerID][0]
+  # jL = self.subDomain.loopInfo[innerID][1]
+  # kL = self.subDomain.loopInfo[innerID][2]
+  # for i in range(iL[0],iL[1],iL[2]):
+  #     for j in range(jL[0],jL[1],jL[2]):
+  #         for k in range(kL[0],kL[1],kL[2]):
+  #             if (self.ind[i,j,k] == 1):
+  #                 globIndex = iLoc*self.Domain.nodes[1]*self.Domain.nodes[2] +  jLoc*self.Domain.nodes[2] +  kLoc
+  #                 self.nodeInfo[c] = Node(ID = c,
+  #                                         localIndex = [i,j,k],
+  #                                         globalIndex = globIndex,
+  #                                         boundary = False,
+  #                                         boundaryID = [0,0,0],
+  #                                         inlet = False,
+  #                                         outlet = False)
+  #                 self.nodeTable[i,j,k] = c
+  #                 c = c + 1
