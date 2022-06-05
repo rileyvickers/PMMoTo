@@ -16,7 +16,7 @@ ext_modules = []
 ext_modules += [
     Extension("_domainGeneration", ["PMMoTo/_domainGeneration.pyx"],include_dirs=['PMMoTo']),
     Extension("_distance", ["PMMoTo/_distance.pyx"],include_dirs=['PMMoTo']),
-    Extension("_drainage", ["PMMoTo/_drainage.pyx"],include_dirs=['PMMoTo']),
+    Extension("PMMoTo.drainage", ["PMMoTo/drainage.pyx"],include_dirs=['PMMoTo']),
 ]
 cmdclass.update({'build_ext': build_ext})
 

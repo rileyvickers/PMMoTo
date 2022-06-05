@@ -261,7 +261,7 @@ class subDomain(object):
         self.globalBoundary = np.zeros([self.Orientation.numFaces],dtype = np.uint8)
         self.inlet = np.zeros([self.Orientation.numFaces],dtype = np.uint8)
         self.outlet = np.zeros([self.Orientation.numFaces],dtype = np.uint8)
-        self.loopInfo = np.zeros([self.Orientation.numFaces+1,3,3],dtype = np.int64)
+        self.loopInfo = np.zeros([self.Orientation.numFaces+1,3,2],dtype = np.int64)
 
     def getInfo(self):
         n = 0
@@ -408,35 +408,35 @@ class subDomain(object):
 
             if self.Orientation.faces[fIndex]['dir'] == -1:
                 if face == 0:
-                    self.loopInfo[fIndex,0] = [self.grid.shape[0]-1,self.grid.shape[0]-rangeInfo[0,1]-1,-1]
-                    self.loopInfo[fIndex,1] = [0,self.grid.shape[1],1]
-                    self.loopInfo[fIndex,2] = [0,self.grid.shape[2],1]
+                    self.loopInfo[fIndex,0] = [self.grid.shape[0]-rangeInfo[0,1],self.grid.shape[0]]
+                    self.loopInfo[fIndex,1] = [0,self.grid.shape[1]]
+                    self.loopInfo[fIndex,2] = [0,self.grid.shape[2]]
                 elif face == 1:
-                    self.loopInfo[fIndex,0] = [rangeInfo[0,0],self.grid.shape[0]-rangeInfo[0,1],1]
-                    self.loopInfo[fIndex,1] = [self.grid.shape[1]-1,self.grid.shape[1]-rangeInfo[1,1]-1,-1]
-                    self.loopInfo[fIndex,2] = [0,self.grid.shape[2],1]
+                    self.loopInfo[fIndex,0] = [rangeInfo[0,0],self.grid.shape[0]-rangeInfo[0,1]]
+                    self.loopInfo[fIndex,1] = [self.grid.shape[1]-rangeInfo[1,1],self.grid.shape[1]]
+                    self.loopInfo[fIndex,2] = [0,self.grid.shape[2]]
                 elif face == 2:
-                    self.loopInfo[fIndex,0] = [rangeInfo[0,0],self.grid.shape[0]-rangeInfo[0,1],1]
-                    self.loopInfo[fIndex,1] = [rangeInfo[1,0],self.grid.shape[1]-rangeInfo[1,1],1]
-                    self.loopInfo[fIndex,2] = [self.grid.shape[2]-1,self.grid.shape[2]-rangeInfo[2,1]-1,-1]
+                    self.loopInfo[fIndex,0] = [rangeInfo[0,0],self.grid.shape[0]-rangeInfo[0,1]]
+                    self.loopInfo[fIndex,1] = [rangeInfo[1,0],self.grid.shape[1]-rangeInfo[1,1]]
+                    self.loopInfo[fIndex,2] = [self.grid.shape[2]-rangeInfo[2,1],self.grid.shape[2]]
 
             elif self.Orientation.faces[fIndex]['dir'] == 1:
                 if face == 0:
-                    self.loopInfo[fIndex,0] = [0,rangeInfo[0,0],1]
-                    self.loopInfo[fIndex,1] = [0,self.grid.shape[1],1]
-                    self.loopInfo[fIndex,2] = [0,self.grid.shape[2],1]
+                    self.loopInfo[fIndex,0] = [0,rangeInfo[0,0]]
+                    self.loopInfo[fIndex,1] = [0,self.grid.shape[1]]
+                    self.loopInfo[fIndex,2] = [0,self.grid.shape[2]]
                 elif face == 1:
-                    self.loopInfo[fIndex,0] = [rangeInfo[0,0],self.grid.shape[0]-rangeInfo[0,1],1]
-                    self.loopInfo[fIndex,1] = [0,rangeInfo[1,0],1]
-                    self.loopInfo[fIndex,2] = [0,self.grid.shape[2],1]
+                    self.loopInfo[fIndex,0] = [rangeInfo[0,0],self.grid.shape[0]-rangeInfo[0,1]]
+                    self.loopInfo[fIndex,1] = [0,rangeInfo[1,0]]
+                    self.loopInfo[fIndex,2] = [0,self.grid.shape[2]]
                 elif face == 2:
-                    self.loopInfo[fIndex,0] = [rangeInfo[0,0],self.grid.shape[0]-rangeInfo[0,1],1]
-                    self.loopInfo[fIndex,1] = [rangeInfo[1,0],self.grid.shape[1]-rangeInfo[1,1],1]
-                    self.loopInfo[fIndex,2] = [0,rangeInfo[2,0],1]
+                    self.loopInfo[fIndex,0] = [rangeInfo[0,0],self.grid.shape[0]-rangeInfo[0,1]]
+                    self.loopInfo[fIndex,1] = [rangeInfo[1,0],self.grid.shape[1]-rangeInfo[1,1]]
+                    self.loopInfo[fIndex,2] = [0,rangeInfo[2,0]]
 
-        self.loopInfo[self.Orientation.numFaces][0] = [rangeInfo[0,0],self.grid.shape[0]-rangeInfo[0,1],1]
-        self.loopInfo[self.Orientation.numFaces][1] = [rangeInfo[1,0],self.grid.shape[1]-rangeInfo[1,1],1]
-        self.loopInfo[self.Orientation.numFaces][2] = [rangeInfo[2,0],self.grid.shape[2]-rangeInfo[2,1],1]
+        self.loopInfo[self.Orientation.numFaces][0] = [rangeInfo[0,0],self.grid.shape[0]-rangeInfo[0,1]]
+        self.loopInfo[self.Orientation.numFaces][1] = [rangeInfo[1,0],self.grid.shape[1]-rangeInfo[1,1]]
+        self.loopInfo[self.Orientation.numFaces][2] = [rangeInfo[2,0],self.grid.shape[2]-rangeInfo[2,1]]
 
     def getNeighbors(self):
         """
