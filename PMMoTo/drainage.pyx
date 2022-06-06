@@ -441,7 +441,6 @@ class Drainage(object):
                                     pass
                                 else:
                                     queue.append(nodeValue)
-                                    numNodes = numNodes + 1
                             else:
                                 break
 
