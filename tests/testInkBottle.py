@@ -40,10 +40,10 @@ def my_function():
         start_time = time.time()
 
     subDomains = [2,2,2]
-    #nodes = [280,60,60]
+    nodes = [280,60,60]
     #nodes = [560,120,120]
     #nodes = [840,181,181]
-    nodes = [1120,240,240]
+    #nodes = [1120,240,240]
     #nodes = [2240,481,481]
     periodic = [False,False,False]
     inlet  = [ 1,0,0]

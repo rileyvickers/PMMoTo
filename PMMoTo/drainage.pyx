@@ -4,6 +4,7 @@ import math
 import numpy as np
 cimport numpy as cnp
 cimport cython
+from libc.stdlib cimport malloc, free
 
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
@@ -44,10 +45,39 @@ directions =  [[-1,-1,-1,  0, 13],
 
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing.
+cdef int getBoundaryIDReference(cnp.ndarray[cnp.int8_t, ndim=1] boundaryID):
+    cdef int cI,cJ,cK
+    cdef int i,j,k
+    i = boundaryID[0]
+    j = boundaryID[1]
+    k = boundaryID[2]
+
+    if i < 0:
+        cI = 0
+    elif i > 0:
+        cI = 9
+    else:
+        cI = 18
+
+    if j < 0:
+        cJ = 0
+    elif j > 0:
+        cJ = 3
+    else:
+        cJ = 6
+
+    if k < 0:
+        cK = 0
+    elif k > 0:
+        cK = 1
+    else:
+        cK = 2
+
+    return cI+cJ+cK
+
+@cython.boundscheck(False)  # Deactivate bounds checking
+@cython.wraparound(False)   # Deactivate negative indexing.
 cdef getDirection3D(int ID,
-                    int i,
-                    int j,
-                    int k,
                     int availDirection,
                     cnp.ndarray[cnp.uint8_t, ndim=1] direction,
                     cnp.ndarray[cnp.uint64_t, ndim=1] nodeDirection):
@@ -75,55 +105,37 @@ cdef getDirection3D(int ID,
 
   return returnCell,d,oppDir,availDirection
 
-class Set(object):
-    def __init__(self, localID = 0):
-        self.inlet = False
-        self.outlet = False
-        self.boundary = False
-        self.nodes = []
-        self.numNodes = 0
-        self.boundaryFaces = []
-        self.boundaryNodes = []
-        self.globalID = 0
+
+class Set:
+
+    def __init__(self, localID = 0, inlet = 0, outlet = 0, boundary = 0, numNodes = 0, numBoundaryNodes = 0):
+        self.inlet = inlet
+        self.outlet = outlet
+        self.boundary = boundary
+        self.numNodes = numNodes
         self.localID = localID
-        self.boundaryNodesGlobalIndex = []
+        self.globalID = 0
+        self.nodes = np.zeros(numNodes,dtype=np.int64)
+        self.boundaryNodes = np.zeros(numBoundaryNodes,dtype=np.int64)
+        self.boundaryFaces = np.zeros(26,dtype=np.uint8)
 
-    def getUniqueBoundaryFace(self,subDomain):
-        """
-        Account for when Boundary Node is on subDomain that is on the boundary of the Domain. If boundaryNode
-        is on edge or corner, we still need to transfer infromation to faces.
-        """
-        perm = [[0,1],[1,2],[0,2]]
-        for n in self.boundaryNodes:
-            if n.boundaryID not in self.boundaryFaces:
-                self.boundaryFaces.append(n.boundaryID)
 
-            bCount = np.sum(np.abs(n.boundaryID))
+    def getNodes(self,n,ID):
+        self.nodes[n] = ID
 
-            nI = subDomain.subID[0] + 1  # PLUS 1 because lookUpID is Padded
-            nJ = subDomain.subID[1] + 1  # PLUS 1 because lookUpID is Padded
-            nK = subDomain.subID[2] + 1  # PLUS 1 because lookUpID is Padded
-            i = n.boundaryID[0]
-            j = n.boundaryID[1]
-            k = n.boundaryID[2]
-            neighborProc = subDomain.lookUpID[i+nI,j+nJ,k+nK]
+    def getBoundaryNodes(self,n,ID,ID2):
+        self.boundaryNodes[n] = ID
+        self.boundaryFaces[ID2] = 1
 
-            if (neighborProc < 0 and bCount > 1):
-                if bCount == 3:
-                    for i in range(0,3):
-                        face = n.boundaryID[:]
-                        face[i] = 0
-                        if face not in self.boundaryFaces:
-                            self.boundaryFaces.append(face)
-                for p in perm:
-                    face = n.boundaryID[:]
-                    face[p[0]] = 0
-                    face[p[1]] = 0
-                    if (np.sum(np.abs(face)) != 0 and face not in self.boundaryFaces):
-                        self.boundaryFaces.append(face)
+    def printNodes(self,f):
+        cdef int n
+        for n in range(0,self.numNodes):
+            print(n,self.nodes[n],self.numNodes,f)
+
+
 
 class Node(object):
-    def __init__(self, ID = None, coords = None, localIndex = None, globalIndex = None, dist = None, boundary = False, boundaryID = None, inlet = False, outlet = False ):
+    def __init__(self, ID = None, coords = None, localIndex = None, globalIndex = None, dist = None, boundary = False, boundaryID = -1, inlet = False, outlet = False ):
         self.ID  = ID
         self.coords = coords
         self.localIndex = localIndex
@@ -133,12 +145,14 @@ class Node(object):
         self.inlet  = inlet
         self.outlet = outlet
         self.dist   = dist
+        self.boundaryIndex = np.zeros(6,dtype='uint8')
         self.direction = np.zeros(26,dtype='uint8')
         self.nodeDirection = np.zeros(26,dtype='uint64')
         self.availDirection = 0
         self.visited = False
         self.medialNode = False
         self.endPath = False
+        self.setID = -1
 
     def get_id(self):
         return self.id
@@ -230,7 +244,7 @@ class Drainage(object):
             jMax = loopInfo[fIndex][1][1]
             kMin = loopInfo[fIndex][2][0]
             kMax = loopInfo[fIndex][2][1]
-            bID = list(self.Orientation.faces[fIndex]['ID'])
+            bID = np.asarray(self.Orientation.faces[fIndex]['ID'],dtype=np.int8)
             for i in range(iMin,iMax):
                 for j in range(jMin,jMax):
                     for k in range(kMin,kMax):
@@ -258,7 +272,7 @@ class Drainage(object):
 
                             globIndex = iLoc*self.Domain.nodes[1]*self.Domain.nodes[2] +  jLoc*self.Domain.nodes[2] +  kLoc
 
-                            boundaryID = bID.copy()
+                            boundaryID = np.copy(bID)
                             if (i < 2):
                                 boundaryID[0] = -1
                             elif (i >= iShape-2):
@@ -272,11 +286,13 @@ class Drainage(object):
                             elif(k >= kShape-2):
                                 boundaryID[2] = 1
 
+                            boundID = getBoundaryIDReference(boundaryID)
+
                             self.nodeInfo[c] = Node(ID=c,
                                                     localIndex = np.array([i,j,k],dtype=np.uint64),
                                                     globalIndex = globIndex,
                                                     boundary = True,
-                                                    boundaryID = boundaryID,
+                                                    boundaryID = boundID,
                                                     inlet = self.subDomain.inlet[fIndex],
                                                     outlet = self.subDomain.outlet[fIndex])
                             nodeTable[i,j,k] = c
@@ -297,7 +313,7 @@ class Drainage(object):
                         kLoc = kStart+k
                         globIndex = iLoc*self.Domain.nodes[1]*self.Domain.nodes[2] +  jLoc*self.Domain.nodes[2] +  kLoc
                         self.nodeInfo[c] = Node(ID = c,
-                                                localIndex =  np.array([0,0,0],dtype=np.uint64),
+                                                localIndex =  -1,
                                                 globalIndex = globIndex,
                                                 boundary = False,
                                                 boundaryID = [0,0,0],
@@ -384,15 +400,28 @@ class Drainage(object):
         2. Outlet
         3. DeadEnd
         """
-        cdef int node,ID,nodeValue,d,oppDir,avail,numNWP,numNodes,setCount
+        cdef int node,ID,nodeValue,d,oppDir,avail,numNWP,numSetNodes,numNodes,setCount
         cdef list queue
         cdef object currentNode
         cdef cnp.ndarray[cnp.uint64_t, ndim=1] localIndex
 
         numNWP = self.numNWP
-        self.Sets = [Set(localID = 0)]
+        numSetNodes = 0
         numNodes = 0
+        numBoundNodes = 0
         setCount = 0
+
+        setInlet = False
+        setBoundary = False
+
+
+        _nodeIndex = np.zeros([self.numNWP,3],dtype=np.int64)
+        cdef cnp.int64_t [:,:] nodeIndex
+        nodeIndex = _nodeIndex
+
+        for i in range(numNWP):
+          nodeIndex[i,0] = -1
+          nodeIndex[i,2] = -1
 
 
         ### Loop Through All Nodes
@@ -410,24 +439,24 @@ class Drainage(object):
                         pass
                     else:
 
-                        self.Sets[setCount].nodes.append(currentNode)
-                        numNodes = numNodes + 1
+                        currentNode.setID = setCount
+                        nodeIndex[numNodes,0] = currentNode.globalIndex
+                        nodeIndex[numNodes,1] = setCount
 
                         if currentNode.boundary:
-                            self.Sets[setCount].boundary = True
-                            self.Sets[setCount].boundaryNodes.append(currentNode)
-                            self.Sets[setCount].boundaryNodesGlobalIndex.append(currentNode.globalIndex)
+                            setBoundary = True
+                            numBoundNodes = numBoundNodes + 1
+                            nodeIndex[numNodes,2] = currentNode.boundaryID
 
                             if currentNode.inlet:
-                                self.Sets[setCount].inlet = True
+                                setInlet = True
 
+                        numSetNodes = numSetNodes + 1
+                        numNodes = numNodes + 1
                         avail = currentNode.availDirection
 
                         while (avail > 0):
                             nodeValue,d,oppDir,avail = getDirection3D(ID,
-                                                                      currentNode.localIndex[0],
-                                                                      currentNode.localIndex[1],
-                                                                      currentNode.localIndex[2],
                                                                       currentNode.availDirection,
                                                                       currentNode.direction,
                                                                       currentNode.nodeDirection)
@@ -446,12 +475,39 @@ class Drainage(object):
 
                         currentNode.visited = True
 
-                self.Sets[setCount].numNodes = numNodes-1
-                setCount = setCount + 1
-                self.Sets.append(Set(localID = setCount))
-                numNodes = 0
 
-        self.setCount = setCount
+                if setCount == 0:
+                    self.Sets = [Set(localID = 0,
+                                   inlet = setInlet,
+                                   outlet = 0,
+                                   boundary = setBoundary,
+                                   numNodes = numSetNodes-1,
+                                   numBoundaryNodes = numBoundNodes-1)]
+                else:
+                    self.Sets.append(Set(localID = setCount,
+                                       inlet = setInlet,
+                                       outlet = 0,
+                                       boundary = setBoundary,
+                                       numNodes = numSetNodes-1,
+                                       numBoundaryNodes = numBoundNodes-1))
+
+                bN = 0
+                for n in range(0,self.Sets[setCount].numNodes):
+                    index = numNodes-numSetNodes+n
+                    self.Sets[setCount].getNodes(n,nodeIndex[index,0])
+                    if nodeIndex[index,2] > -1:
+                        self.Sets[setCount].getBoundaryNodes(bN,nodeIndex[index,0],nodeIndex[index,2])
+                        bN = bN + 1
+
+
+                setCount = setCount + 1
+                numSetNodes = 0
+                numBoundNodes = 0
+                setInlet = False
+                setBoundary = False
+
+
+        self.setCount = setCount - 1
         self.Sets.pop()
 
     def getBoundarySets(self):
@@ -472,32 +528,35 @@ class Drainage(object):
         for numSets in range(0,self.setCount):
             if self.Sets[numSets].boundary:
                 self.boundarySets[bSetCount] = self.Sets[numSets]
-                self.boundarySets[bSetCount].getUniqueBoundaryFace(self.subDomain)
                 bSetCount = bSetCount + 1
                 self.boundarySets.append(Set())
-
 
         self.boundarySets.pop()
 
         for bSet in self.boundarySets[:]:
-            for face in bSet.boundaryFaces[:]:
-                i = face[0]
-                j = face[1]
-                k = face[2]
+            for face in range(0,numDirections):
+                if bSet.boundaryFaces[face] > 0:
 
-                neighborProc = self.subDomain.lookUpID[i+nI,j+nJ,k+nK]
-                if neighborProc == -1:
-                    bSet.boundaryFaces.remove(face)
-                else:
-                    if neighborProc not in self.boundaryData[self.subDomain.ID]['NeighborProcID'].keys():
-                        self.boundaryData[self.subDomain.ID]['NeighborProcID'][neighborProc] = {'setID':{}}
-                    if bSet.inlet:
-                        self.boundInlet = 1
-                    self.boundaryData[self.subDomain.ID]['NeighborProcID'][neighborProc]['setID'][bSet.localID] = {'boundaryNodes':bSet.boundaryNodesGlobalIndex,'ProcID':self.subDomain.ID,'inlet':bSet.inlet}
+                    i = directions[face][0]
+                    j = directions[face][1]
+                    k = directions[face][2]
+                    print(self.subDomain.ID,[i,j,k],self.subDomain.lookUpID[i+nI,j+nJ,k+nK],bSet.boundaryNodes)
 
-            if (len(bSet.boundaryFaces) == 0):
+                    neighborProc = self.subDomain.lookUpID[i+nI,j+nJ,k+nK]
+                    if neighborProc == -1:
+                        pass
+                    else:
+                        if neighborProc not in self.boundaryData[self.subDomain.ID]['NeighborProcID'].keys():
+                            self.boundaryData[self.subDomain.ID]['NeighborProcID'][neighborProc] = {'setID':{}}
+                        if bSet.inlet:
+                            self.boundInlet = 1
+                        self.boundaryData[self.subDomain.ID]['NeighborProcID'][neighborProc]['setID'][bSet.localID] = {'boundaryNodes':bSet.boundaryNodes,'ProcID':self.subDomain.ID,'inlet':bSet.inlet}
+
+            print(self.subDomain.ID,np.sum(bSet.boundaryFaces))
+            if (np.sum(bSet.boundaryFaces) == 0):
                 self.boundarySets.remove(bSet)
                 bSet.boundary = False
+
 
         self.boundSetCount = len(self.boundarySets)
 
@@ -725,7 +784,9 @@ def calcDrainage(rank,size,pc,domain,subDomain,inlet,EDT):
                     drain.getBoundarySets()
                     drain.drainCOMM()
                     drain.drainCOMMUnpack()
+                    print(drain.subDomain.ID,"HI")
                     drain.correctBoundarySets()
+                    print(drain.subDomain.ID,"HI2")
                     drainData = [drain.matchedSets,drain.setCount,drain.boundSetCount]
                     drainData = comm.gather(drainData, root=0)
                     drain.organizeSets(size,drainData)
