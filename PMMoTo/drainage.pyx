@@ -482,14 +482,14 @@ class Drainage(object):
                                    outlet = 0,
                                    boundary = setBoundary,
                                    numNodes = numSetNodes-1,
-                                   numBoundaryNodes = numBoundNodes-1)]
+                                   numBoundaryNodes = numBoundNodes)]
                 else:
                     self.Sets.append(Set(localID = setCount,
                                        inlet = setInlet,
                                        outlet = 0,
                                        boundary = setBoundary,
                                        numNodes = numSetNodes-1,
-                                       numBoundaryNodes = numBoundNodes-1))
+                                       numBoundaryNodes = numBoundNodes))
 
                 bN = 0
                 for n in range(0,self.Sets[setCount].numNodes):
