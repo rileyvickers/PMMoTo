@@ -1,4 +1,5 @@
 # cython: profile=True
+# cython: linetrace=True
 
 import math
 import numpy as np
@@ -75,40 +76,9 @@ cdef int getBoundaryIDReference(cnp.ndarray[cnp.int8_t, ndim=1] boundaryID):
 
     return cI+cJ+cK
 
-@cython.boundscheck(False)  # Deactivate bounds checking
-@cython.wraparound(False)   # Deactivate negative indexing.
-cdef getDirection3D(int ID,
-                    int availDirection,
-                    cnp.ndarray[cnp.uint8_t, ndim=1] direction,
-                    cnp.ndarray[cnp.uint64_t, ndim=1] nodeDirection):
 
-  cdef int d,ii,jj,kk,oppDir,returnCell,found
-  cdef int returnVal[4]
-
-  if availDirection > 0:
-      d = 25
-      found = 0
-      while d > 0  and not found:
-        if direction[d] == 1:
-          found = 1
-        else:
-          d = d - 1
-      ii = directions[d][0]
-      jj = directions[d][1]
-      kk = directions[d][2]
-      oppDir = directions[d][4]
-      returnCell = nodeDirection[d]
-      availDirection = availDirection - 1
-  else:
-      returnCell = -1
-
-
-  return returnCell,d,oppDir,availDirection
-
-
-class Set:
-
-    def __init__(self, localID = 0, inlet = 0, outlet = 0, boundary = 0, numNodes = 0, numBoundaryNodes = 0):
+class Set(object):
+    def __init__(self, localID = 0, inlet = False, outlet = False, boundary = False, numNodes = 0, numBoundaryNodes = 0):
         self.inlet = inlet
         self.outlet = outlet
         self.boundary = boundary
@@ -119,7 +89,6 @@ class Set:
         self.boundaryNodes = np.zeros(numBoundaryNodes,dtype=np.int64)
         self.boundaryFaces = np.zeros(26,dtype=np.uint8)
 
-
     def getNodes(self,n,i,j,k):
         self.nodes[n,0] = i
         self.nodes[n,1] = j
@@ -129,47 +98,22 @@ class Set:
         self.boundaryNodes[n] = ID
         self.boundaryFaces[ID2] = 1
 
-    def printNodes(self,f):
-        cdef int n
-        for n in range(0,self.numNodes):
-            print(n,self.nodes[n],self.numNodes,f)
-
-
 
 class Node(object):
-    def __init__(self, ID = None, coords = None, localIndex = None, globalIndex = None, dist = None, boundary = False, boundaryID = -1, inlet = False, outlet = False ):
+    def __init__(self, ID = 0, localIndex =np.zeros(3,dtype=np.int64), globalIndex = 0, boundary = False, boundaryID = -1, inlet = False, outlet = False ):
         self.ID  = ID
-        self.coords = coords
-        self.localIndex = localIndex
-        self.globalIndex = globalIndex
         self.boundary = boundary
-        self.boundaryID = boundaryID
         self.inlet  = inlet
         self.outlet = outlet
-        self.dist   = dist
-        self.boundaryIndex = np.zeros(6,dtype='uint8')
+        self.availDirection = 0
+        self.lastDirection = 25
+        self.visited = False
+        self.localIndex = localIndex
+        self.globalIndex = globalIndex
+        self.boundaryID = boundaryID
         self.direction = np.zeros(26,dtype='uint8')
         self.nodeDirection = np.zeros(26,dtype='uint64')
-        self.availDirection = 0
-        self.visited = False
-        self.medialNode = False
-        self.endPath = False
-        self.setID = -1
 
-    def get_id(self):
-        return self.id
-
-    def validDirection(self,c):
-        self.direction[c] = 1
-
-    def setNodeDirection(self,c,node):
-        self.nodeDirection[c] = node
-
-    def saveDirection(self):
-        self.saveDirection = np.copy(self.direction)
-
-    def getAvailDirections(self):
-        self.availDirection = int(self.direction.sum())
 
 class Drainage(object):
     def __init__(self,Domain,Orientation,subDomain,gamma,inlet,edt):
@@ -204,16 +148,41 @@ class Drainage(object):
         self.ind = np.where( (self.edt.EDT >= self.probeR) & (self.subDomain.grid == 1),1,0).astype(np.uint8)
         self.numNWP = np.sum(self.ind)
 
+    @cython.boundscheck(False)  # Deactivate bounds checking
+    @cython.wraparound(False)   # Deactivate negative indexing.
     def getNodeInfo(self):
+        """
+        Speed up Code with avoiding Node Class and Only Use NumPY Arrays
+        NodeInfoBin Array is [boundary,inlet,outlet,boundaryID,availDirection,lastDirection,visited]
+        NodeInfoIndex Array is [i,j,k,globalIndex]
+        NodeDir Array is [directions[26],nodeDirections[26]]
+        """
 
-        self.nodeInfo = np.empty((self.numNWP), dtype = object)
+        self.nodeInfoBin = np.zeros([self.numNWP,7],dtype=np.int8)
+        self.nodeInfoBin[:,3] = -1 #Initialize BoundaryID
+        self.nodeInfoBin[:,5] = 25 #Initialize lastDirection
+        cdef cnp.int8_t [:,:] nodeInfoBin
+        nodeInfoBin = self.nodeInfoBin
+
+        self.nodeInfoIndex = np.zeros([self.numNWP,4],dtype=np.uint64)
+        cdef cnp.uint64_t [:,:] nodeInfoIndex
+        nodeInfoIndex = self.nodeInfoIndex
+
+        self.nodeInfoDir = np.zeros([self.numNWP,26],dtype=np.uint8)
+        cdef cnp.uint8_t [:,:] nodeInfoDir
+        nodeInfoDir = self.nodeInfoDir
+
+        self.nodeInfoDirNode = np.zeros([self.numNWP,26],dtype=np.uint64)
+        cdef cnp.uint64_t [:,:] nodeInfoDirNode
+        nodeInfoDirNode = self.nodeInfoDirNode
 
         self.nodeTable = -np.ones_like(self.ind,dtype=np.int64)
         cdef cnp.int64_t [:,:,:] nodeTable
         nodeTable = self.nodeTable
 
-        cdef int i,j,k,c,d,ii,jj,kk,availDirection
+        cdef int c,d,i,j,k,ii,jj,kk,availDirection,perAny,setInlet,setOutlet
         cdef int iLoc,jLoc,kLoc,globIndex
+        cdef int iMin,iMax,jMin,jMax,kMin,kMax
 
         cdef int numFaces,fIndex
         numFaces = self.Orientation.numFaces
@@ -228,15 +197,17 @@ class Drainage(object):
         jShape = self.ind.shape[1]
         kShape = self.ind.shape[2]
 
+        indP = np.pad(self.ind,1)
         cdef cnp.uint8_t [:,:,:] ind
-        ind = self.ind
+        ind = indP
 
         cdef cnp.int64_t [:,:,:] loopInfo
         loopInfo = self.subDomain.loopInfo
 
-        cdef int iMin,iMax
-        cdef int jMin,jMax
-        cdef int kMin,kMax
+        cdef int dN0,dN1,dN2
+        dN0 = self.Domain.nodes[0]
+        dN1 = self.Domain.nodes[1]
+        dN2 = self.Domain.nodes[2]
 
         c = 0
         for fIndex in range(0,numFaces):
@@ -247,32 +218,34 @@ class Drainage(object):
             kMin = loopInfo[fIndex][2][0]
             kMax = loopInfo[fIndex][2][1]
             bID = np.asarray(self.Orientation.faces[fIndex]['ID'],dtype=np.int8)
+            perFace  = self.subDomain.neighborPerF[fIndex]
+            perAny = perFace.any()
+            setInlet = self.subDomain.inlet[fIndex]
+            setOutlet = self.subDomain.outlet[fIndex]
             for i in range(iMin,iMax):
                 for j in range(jMin,jMax):
                     for k in range(kMin,kMax):
-                        if ind[i,j,k] == 1:
+                        if ind[i+1,j+1,k+1] == 1:
 
                             iLoc = iStart+i
                             jLoc = jStart+j
                             kLoc = kStart+k
 
-                            perFace  = self.subDomain.neighborPerF[fIndex]
-
-                            if perFace.any():
-                                if iLoc >= self.Domain.nodes[0]:
+                            if perAny:
+                                if iLoc >= dN0:
                                     iLoc = 0
                                 elif iLoc < 0:
-                                    iLoc = self.Domain.nodes[0]-1
-                                if jLoc >= self.Domain.nodes[1]:
+                                    iLoc = dN0-1
+                                if jLoc >= dN1:
                                     jLoc = 0
                                 elif jLoc < 0:
-                                    jLoc = self.Domain.nodes[1]-1
-                                if kLoc >= self.Domain.nodes[2]:
+                                    jLoc = dN1-1
+                                if kLoc >= dN2:
                                     kLoc = 0
                                 elif kLoc < 0:
-                                    kLoc = self.Domain.nodes[2]-1
+                                    kLoc =dN2-1
 
-                            globIndex = iLoc*self.Domain.nodes[1]*self.Domain.nodes[2] +  jLoc*self.Domain.nodes[2] +  kLoc
+                            globIndex = iLoc*dN1*dN2 +  jLoc*dN2 +  kLoc
 
                             boundaryID = np.copy(bID)
                             if (i < 2):
@@ -289,14 +262,14 @@ class Drainage(object):
                                 boundaryID[2] = 1
 
                             boundID = getBoundaryIDReference(boundaryID)
-
-                            self.nodeInfo[c] = Node(ID=c,
-                                                    localIndex = np.array([i,j,k],dtype=np.uint64),
-                                                    globalIndex = globIndex,
-                                                    boundary = True,
-                                                    boundaryID = boundID,
-                                                    inlet = self.subDomain.inlet[fIndex],
-                                                    outlet = self.subDomain.outlet[fIndex])
+                            nodeInfoBin[c,0] = 1
+                            nodeInfoBin[c,1] = setInlet
+                            nodeInfoBin[c,2] = setOutlet
+                            nodeInfoBin[c,3] = boundID
+                            nodeInfoIndex[c,0] = i
+                            nodeInfoIndex[c,1] = j
+                            nodeInfoIndex[c,2] = k
+                            nodeInfoIndex[c,3] = globIndex
                             nodeTable[i,j,k] = c
                             c = c + 1
 
@@ -309,44 +282,20 @@ class Drainage(object):
         for i in range(iMin,iMax):
             for j in range(jMin,jMax):
                 for k in range(kMin,kMax):
-                    if (ind[i,j,k] == 1):
+                    if (ind[i+1,j+1,k+1] == 1):
                         iLoc = iStart+i
                         jLoc = jStart+j
                         kLoc = kStart+k
-                        globIndex = iLoc*self.Domain.nodes[1]*self.Domain.nodes[2] +  jLoc*self.Domain.nodes[2] +  kLoc
-                        self.nodeInfo[c] = Node(ID = c,
-                                                localIndex =  np.array([i,j,k],dtype=np.uint64),
-                                                globalIndex = globIndex,
-                                                boundary = False,
-                                                boundaryID = -1,
-                                                inlet = False,
-                                                outlet = False)
+                        globIndex = iLoc*dN1*dN2 +  jLoc*dN2 +  kLoc
+                        nodeInfoIndex[c,0] = i
+                        nodeInfoIndex[c,1] = j
+                        nodeInfoIndex[c,2] = k
+                        nodeInfoIndex[c,3] = globIndex
                         nodeTable[i,j,k] = c
                         c = c + 1
 
-    def getNodeDirections(self):
-
-     indP = np.pad(self.ind,1)
-     cdef cnp.uint8_t [:,:,:] ind
-     ind = indP
-
-     cdef cnp.int64_t [:,:,:] nodeTable
-     nodeTable = self.nodeTable
-
-     cdef cnp.int64_t [:,:,:] loopInfo
-     loopInfo = self.subDomain.loopInfo
-
-     cdef int i,j,k,c,d,ii,jj,kk,availDirection,node
-
-     cdef int numFaces,fIndex
-     numFaces = self.Orientation.numFaces
-
-     cdef int iMin,iMax
-     cdef int jMin,jMax
-     cdef int kMin,kMax
-
-     c = 0
-     for fIndex in range(numFaces):
+        c = 0
+        for fIndex in range(numFaces):
          iMin = loopInfo[fIndex][0][0]
          iMax = loopInfo[fIndex][0][1]
          jMin = loopInfo[fIndex][1][0]
@@ -359,42 +308,43 @@ class Drainage(object):
                      if ind[i+1,j+1,k+1] == 1:
                        availDirection = 0
                        for d in range(0,numDirections):
-                           ii = directions[d][0] + 1
-                           jj = directions[d][1] + 1
-                           kk = directions[d][2] + 1
-                           if (ind[i+ii,j+jj,k+kk] == 1):
-                               self.nodeInfo[c].direction[d] = 1
-                               node = nodeTable[i+ii-1,j+jj-1,k+kk-1]
-                               self.nodeInfo[c].nodeDirection[d] = node
+                           ii = directions[d][0]
+                           jj = directions[d][1]
+                           kk = directions[d][2]
+                           if (ind[i+ii+1,j+jj+1,k+kk+1] == 1):
+                               node = nodeTable[i+ii,j+jj,k+kk]
+                               nodeInfoDir[c,d] = 1
+                               nodeInfoDirNode[c,d] = node
                                availDirection += 1
 
-                       self.nodeInfo[c].availDirection = availDirection
+                       nodeInfoBin[c,4] = availDirection
                        c = c + 1
 
-     iMin = loopInfo[numFaces][0][0]
-     iMax = loopInfo[numFaces][0][1]
-     jMin = loopInfo[numFaces][1][0]
-     jMax = loopInfo[numFaces][1][1]
-     kMin = loopInfo[numFaces][2][0]
-     kMax = loopInfo[numFaces][2][1]
-     for i in range(iMin,iMax):
+        iMin = loopInfo[numFaces][0][0]
+        iMax = loopInfo[numFaces][0][1]
+        jMin = loopInfo[numFaces][1][0]
+        jMax = loopInfo[numFaces][1][1]
+        kMin = loopInfo[numFaces][2][0]
+        kMax = loopInfo[numFaces][2][1]
+        for i in range(iMin,iMax):
          for j in range(jMin,jMax):
              for k in range(kMin,kMax):
                if ind[i+1,j+1,k+1] == 1:
                  availDirection = 0
                  for d in range(0,numDirections):
-                     ii = directions[d][0] + 1
-                     jj = directions[d][1] + 1
-                     kk = directions[d][2] + 1
-                     if (ind[i+ii,j+jj,k+kk] == 1):
-                         self.nodeInfo[c].direction[d] = 1
-                         node = nodeTable[i+ii-1,j+jj-1,k+kk-1]
-                         self.nodeInfo[c].nodeDirection[d] = node
+                     ii = directions[d][0]
+                     jj = directions[d][1]
+                     kk = directions[d][2]
+                     if (ind[i+ii+1,j+jj+1,k+kk+1] == 1):
+                         node = nodeTable[i+ii,j+jj,k+kk]
+                         nodeInfoDir[c,d] = 1
+                         nodeInfoDirNode[c,d] = node
                          availDirection += 1
 
-                 self.nodeInfo[c].availDirection = availDirection
+                 nodeInfoBin[c,4] = availDirection
                  c = c + 1
 
+    @cython.boundscheck(False)  # Deactivate bounds checking
     def getConnectedSets(self):
         """
         Connects the NxNxN (or NXN) nodes into connected sets.
@@ -402,11 +352,9 @@ class Drainage(object):
         2. Outlet
         3. DeadEnd
         """
-        cdef int node,ID,nodeValue,d,oppDir,avail,numNWP,numSetNodes,numNodes,setCount
-        cdef list queue
-        cdef object currentNode
-        cdef cnp.ndarray[cnp.uint64_t, ndim=1] localIndex
+        cdef int node,ID,nodeValue,d,oppDir,avail,n,index,bN
 
+        cdef int numNWP,numSetNodes,numNodes,numBoundNodes,setCount
         numNWP = self.numNWP
         numSetNodes = 0
         numNodes = 0
@@ -416,82 +364,93 @@ class Drainage(object):
         setInlet = False
         setBoundary = False
 
-
         _nodeIndex = np.zeros([self.numNWP,5],dtype=np.int64)
-        cdef cnp.int64_t [:,:] nodeIndex
+        cdef cnp.int64_t [:,::1] nodeIndex
         nodeIndex = _nodeIndex
 
         for i in range(numNWP):
           nodeIndex[i,3] = -1
 
+        cdef cnp.int8_t [:,:] nodeInfoBin
+        nodeInfoBin = self.nodeInfoBin
+
+        cdef cnp.uint64_t [:,:] nodeInfoIndex
+        nodeInfoIndex = self.nodeInfoIndex
+
+        cdef cnp.uint8_t [:,:] nodeInfoDir
+        nodeInfoDir = self.nodeInfoDir
+
+        cdef cnp.uint64_t [:,:] nodeInfoDirNode
+        nodeInfoDirNode = self.nodeInfoDirNode
+
+        cdef cnp.int64_t [:,:,:] nodeTable
+        nodeTable = self.nodeTable
+
+        cdef cnp.int8_t [:] currentNode
 
         ### Loop Through All Nodes
         for node in range(0,numNWP):
-            queue=[node]
-
-            if self.nodeInfo[queue[-1]].visited:
-                queue.pop(-1)
+            if nodeInfoBin[node,6] == 1:
+                pass
             else:
+                queue=[node]
                 while queue:
                     ID = queue.pop(-1)
-                    currentNode = self.nodeInfo[ID]
-
-                    if currentNode.visited:
+                    currentNode = nodeInfoBin[ID]
+                    if currentNode[6]:
                         pass
                     else:
-
-                        currentNode.setID = setCount
-                        nodeIndex[numNodes,0] = currentNode.localIndex[0]
-                        nodeIndex[numNodes,1] = currentNode.localIndex[1]
-                        nodeIndex[numNodes,2] = currentNode.localIndex[2]
-
-                        if currentNode.boundary:
+                        nodeIndex[numNodes,0] = nodeInfoIndex[ID,0]
+                        nodeIndex[numNodes,1] = nodeInfoIndex[ID,1]
+                        nodeIndex[numNodes,2] = nodeInfoIndex[ID,2]
+                        if currentNode[0]:
                             setBoundary = True
                             numBoundNodes = numBoundNodes + 1
-                            nodeIndex[numNodes,3] = currentNode.boundaryID
-                            nodeIndex[numNodes,4] = currentNode.globalIndex
-
-                            if currentNode.inlet:
+                            nodeIndex[numNodes,3] = currentNode[3]
+                            nodeIndex[numNodes,4] = nodeInfoIndex[ID,3]
+                            if currentNode[1]:
                                 setInlet = True
-
                         numSetNodes = numSetNodes + 1
                         numNodes = numNodes + 1
-                        avail = currentNode.availDirection
+                        while (currentNode[4] > 0):
 
-                        while (avail > 0):
-                            nodeValue,d,oppDir,avail = getDirection3D(ID,
-                                                                      currentNode.availDirection,
-                                                                      currentNode.direction,
-                                                                      currentNode.nodeDirection)
-
-                            self.nodeInfo[nodeValue].direction[oppDir] = 0
-                            currentNode.direction[d] = 0
-                            currentNode.availDirection = avail
-
+                            nodeValue = -1
+                            if currentNode[4] > 0:
+                                d = currentNode[5]
+                                found = 0
+                                while d > 0  and not found:
+                                  if nodeInfoDir[ID,d] == 1:
+                                    found = 1
+                                    oppDir = directions[d][4]
+                                    nodeValue = nodeInfoDirNode[ID,d]
+                                    nodeInfoDir[nodeValue,oppDir] = 0
+                                    currentNode[4] = currentNode[4] - 1
+                                    currentNode[5] = d
+                                    nodeInfoDir[ID,d] = 0
+                                  else:
+                                    d = d - 1
                             if (nodeValue > -1):
-                                if self.nodeInfo[nodeValue].visited:
+                                if nodeInfoBin[nodeValue,6] or nodeInfoBin[nodeValue,4] == 0:
                                     pass
                                 else:
                                     queue.append(nodeValue)
                             else:
                                 break
-
-                        currentNode.visited = True
-
+                        currentNode[6] = 1
 
                 if setCount == 0:
                     self.Sets = [Set(localID = setCount,
                                    inlet = setInlet,
                                    outlet = 0,
                                    boundary = setBoundary,
-                                   numNodes = numSetNodes-1,
+                                   numNodes = numSetNodes,
                                    numBoundaryNodes = numBoundNodes)]
                 else:
                     self.Sets.append(Set(localID = setCount,
                                        inlet = setInlet,
                                        outlet = 0,
                                        boundary = setBoundary,
-                                       numNodes = numSetNodes-1,
+                                       numNodes = numSetNodes,
                                        numBoundaryNodes = numBoundNodes))
 
                 bN = 0
@@ -501,7 +460,6 @@ class Drainage(object):
                     if nodeIndex[index,3] > -1:
                         self.Sets[setCount].getBoundaryNodes(bN,nodeIndex[index,4],nodeIndex[index,3])
                         bN = bN + 1
-
 
                 setCount = setCount + 1
                 numSetNodes = 0
@@ -544,7 +502,7 @@ class Drainage(object):
 
                     neighborProc = self.subDomain.lookUpID[i+nI,j+nJ,k+nK]
                     if neighborProc == -1:
-                        pass
+                        bSet.boundaryFaces[face] = 0
                     else:
                         if neighborProc not in self.boundaryData[self.subDomain.ID]['NeighborProcID'].keys():
                             self.boundaryData[self.subDomain.ID]['NeighborProcID'][neighborProc] = {'setID':{}}
@@ -555,7 +513,6 @@ class Drainage(object):
             if (np.sum(bSet.boundaryFaces) == 0):
                 self.boundarySets.remove(bSet)
                 bSet.boundary = False
-
 
         self.boundSetCount = len(self.boundarySets)
 
@@ -587,16 +544,16 @@ class Drainage(object):
                 otherSetKeys = list(otherBD[nbProc]['NeighborProcID'][nbProc]['setID'].keys())
                 numOtherSetKeys = len(otherSetKeys)
 
-                inlet = 0
                 testSetKey = 0
                 matchedOut = False
                 while testSetKey < numOtherSetKeys:
+                    inlet = False
                     otherNodes = otherBD[nbProc]['NeighborProcID'][nbProc]['setID'][otherSetKeys[testSetKey]]['boundaryNodes']
                     otherInlet = otherBD[nbProc]['NeighborProcID'][nbProc]['setID'][otherSetKeys[testSetKey]]['inlet']
 
                     if len(set(ownNodes).intersection(otherNodes)) > 0:
                         if (ownInlet or otherInlet):
-                            inlet = 1
+                            inlet = True
                         self.matchedSets.append([self.subDomain.ID,ownSet,nbProc,otherSetKeys[testSetKey],inlet])
                         matchedOut = True
                     testSetKey = testSetKey + 1
@@ -605,12 +562,19 @@ class Drainage(object):
                     print("Set Not Matched! Hmmm",self.subDomain.ID,nbProc,ownSet,ownNodes)
 
     def organizeSets(self,size,drainData):
+        """
+        Input: [drain.matchedSets,drain.setCount,drain.boundSetCount] from all Procs
+        Matched Sets contains [subDomain.ID,ownSetID,neighProc,neighSetID,Inlet]
+
+        Output: globalIndexStart,globalBoundarySetID
+        """
 
         if self.subDomain.ID == 0:
+
+            #Gather all information from all Procs
             allMatchedSets = np.zeros([0,5],dtype=np.int64)
             numSets = np.zeros(size,dtype=np.int64)
             numBoundSets = np.zeros(size,dtype=np.int64)
-
             for n in range(0,size):
                 numSets[n] = drainData[n][1]
                 numBoundSets[n] = drainData[n][2]
@@ -673,6 +637,9 @@ class Drainage(object):
         self.globalBoundarySetID = comm.scatter(globalSetScatter, root=0)
 
     def updateSetID(self):
+        """
+        globalBoundarySetID = [subDomain.ID,setLocalID,globalID,Inlet]
+        """
         c = 0
         for s in self.Sets:
             if s.boundary == True:
@@ -777,7 +744,6 @@ def calcDrainage(rank,size,pc,domain,subDomain,inlet,EDT):
                 drain.nwpFinal = drain.nwp
             else:
                 drain.getNodeInfo()
-                drain.getNodeDirections()
                 drain.getConnectedSets()
                 if size > 1:
                     drain.getBoundarySets()
@@ -797,6 +763,6 @@ def calcDrainage(rank,size,pc,domain,subDomain,inlet,EDT):
         if rank == 0:
             sW = 1.-drain.totalnwpNodes[0]/subDomain.totalPoreNodes[0]
             #print("Wetting phase saturation is: %e at pC of %e" %(sW,p))
-            print(p,sW,drain.totalnwpNodes[0],subDomain.totalPoreNodes[0],drain.probeR)
+            print(p,sW)
 
     return drain
