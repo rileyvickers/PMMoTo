@@ -46,24 +46,30 @@ class Morphology(object):
             fID = self.Orientation.faces[fIndex]['ID']
             if neigh > -1:
                 self.halo[fIndex]= np.max(np.abs(fID*self.structRatio))
-                self.haloData[self.subDomain.ID]['NeighborProcID'][neigh] = self.grid[self.slices[fIndex,0],self.slices[fIndex,1],self.slices[fIndex,2]]
+                if neigh not in self.haloData[self.subDomain.ID]['NeighborProcID'].keys():
+                    self.haloData[self.subDomain.ID]['NeighborProcID'][neigh] = {'Index':{}}
+                self.haloData[self.subDomain.ID]['NeighborProcID'][neigh]['Index'][fIndex] = self.grid[self.slices[fIndex,0],self.slices[fIndex,1],self.slices[fIndex,2]]
+
 
         self.slices = self.Orientation.sendESlices
         for eIndex in self.Orientation.edges:
             neigh = self.subDomain.neighborE[eIndex]
             if neigh > -1:
-                self.haloData[self.subDomain.ID]['NeighborProcID'][neigh] = self.grid[self.slices[eIndex,0],self.slices[eIndex,1],self.slices[eIndex,2]]
+                if neigh not in self.haloData[self.subDomain.ID]['NeighborProcID'].keys():
+                    self.haloData[self.subDomain.ID]['NeighborProcID'][neigh] = {'Index':{}}
+                self.haloData[self.subDomain.ID]['NeighborProcID'][neigh]['Index'][eIndex] = self.grid[self.slices[eIndex,0],self.slices[eIndex,1],self.slices[eIndex,2]]
 
         self.slices = self.Orientation.sendCSlices
         for cIndex in self.Orientation.corners:
             neigh = self.subDomain.neighborC[cIndex]
             if neigh > -1:
-                self.haloData[self.subDomain.ID]['NeighborProcID'][neigh] = self.grid[self.slices[cIndex,0],self.slices[cIndex,1],self.slices[cIndex,2]]
+                if neigh not in self.haloData[self.subDomain.ID]['NeighborProcID'].keys():
+                    self.haloData[self.subDomain.ID]['NeighborProcID'][neigh] = {'Index':{}}
+                self.haloData[self.subDomain.ID]['NeighborProcID'][neigh]['Index'][cIndex] = self.grid[self.slices[cIndex,0],self.slices[cIndex,1],self.slices[cIndex,2]]
 
         self.haloGrid = np.pad(self.grid, ( (self.halo[1], self.halo[0]), (self.halo[3], self.halo[2]), (self.halo[5], self.halo[4]) ), 'constant', constant_values=255)
 
     def haloComm(self):
-
         self.dataRecvFace,self.dataRecvEdge,self.dataRecvCorner = communication.subDomainComm(self.Orientation,self.subDomain,self.haloData[self.subDomain.ID]['NeighborProcID'])
 
     def haloCommUnpack(self):
@@ -78,7 +84,7 @@ class Morphology(object):
                 if neigh in self.haloData[self.subDomain.ID]['NeighborProcID'].keys():
                     if neigh not in self.haloData:
                         self.haloData[neigh] = {'NeighborProcID':{}}
-                    self.haloData[neigh]['NeighborProcID'][neigh] = self.dataRecvFace[fIndex]
+                    self.haloData[neigh]['NeighborProcID'][neigh] = self.dataRecvFace[fIndex]['Index'][oppIndex]
                     self.haloGrid[self.slices[fIndex,0],self.slices[fIndex,1],self.slices[fIndex,2]] = self.haloData[neigh]['NeighborProcID'][neigh]
 
         #### Edges ####
@@ -90,7 +96,7 @@ class Morphology(object):
                 if neigh in self.haloData[self.subDomain.ID]['NeighborProcID'].keys():
                     if neigh not in self.haloData:
                         self.haloData[neigh] = {'NeighborProcID':{}}
-                    self.haloData[neigh]['NeighborProcID'][neigh] = self.dataRecvEdge[eIndex]
+                    self.haloData[neigh]['NeighborProcID'][neigh] = self.dataRecvEdge[eIndex]['Index'][oppIndex]
                     self.haloGrid[self.slices[eIndex,0],self.slices[eIndex,1],self.slices[eIndex,2]] = self.haloData[neigh]['NeighborProcID'][neigh]
 
         #### Corners ####
@@ -102,13 +108,10 @@ class Morphology(object):
                 if neigh in self.haloData[self.subDomain.ID]['NeighborProcID'].keys():
                     if neigh not in self.haloData:
                         self.haloData[neigh] = {'NeighborProcID':{}}
-                    self.haloData[neigh]['NeighborProcID'][neigh] = self.dataRecvCorner[cIndex]
+                    self.haloData[neigh]['NeighborProcID'][neigh] = self.dataRecvCorner[cIndex]['Index'][oppIndex]
                     self.haloGrid[self.slices[cIndex,0],self.slices[cIndex,1],self.slices[cIndex,2]] = self.haloData[neigh]['NeighborProcID'][neigh]
 
     def morphAdd(self):
-        #gridOut = ndimage.binary_dilation(self.haloGrid,structure=self.structElem)
-        # gridOut = ndimage.grey_dilation(self.haloGrid,structure=self.structElem)
-        #gridOut = fftconvolve(self.haloGrid, self.structElem, mode='same') > 0.1s
         gridOutEDT = edt.edt3d(np.logical_not(self.haloGrid), anisotropy=(self.Domain.dX, self.Domain.dY, self.Domain.dZ))
         gridOut = np.where( (gridOutEDT <= self.radius),1,0).astype(np.uint8)
         dim = gridOut.shape

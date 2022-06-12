@@ -45,6 +45,8 @@ class EDT(object):
         self.buffer = self.subDomain.buffer
         self.distVals = None
         self.distCounts  = None
+        self.minD = 0
+        self.maxD = 0
 
     def genLocalEDT(self,):
         self.EDT = edt.edt3d(self.grid, anisotropy=(self.Domain.dX, self.Domain.dY, self.Domain.dZ))
@@ -406,7 +408,7 @@ class EDT(object):
                             own[2][0]:own[2][1]]
         self.distVals,self.distCounts  = np.unique(ownEDT,return_counts=True)
 
-def calcEDT(rank,size,domain,subDomain,grid):
+def calcEDT(rank,size,domain,subDomain,grid,stats=False):
 
     sDEDT = EDT(Domain = domain, ID = rank, subDomain = subDomain, Orientation = subDomain.Orientation, grid = grid)
     sDEDT.genLocalEDT()
@@ -420,8 +422,7 @@ def calcEDT(rank,size,domain,subDomain,grid):
         sDEDT.EDTComm()
         sDEDT.EDTCommUnpack()
         sDEDT.fixInterface()
-    EDTStats = False
-    if EDTStats:
+    if stats:
         sDEDT.genStats()
         EDTData = [sDEDT.ID,sDEDT.distVals,sDEDT.distCounts]
         EDTData = comm.gather(EDTData, root=0)
@@ -441,6 +442,15 @@ def calcEDT(rank,size,domain,subDomain,grid):
                     counts[ind] = counts[ind] + d[2][n]
 
             stats = np.stack((bins,counts), axis = 1)
-            print("Minimum distance:",bins[1],"Maximum distance:",bins[-1])
+            sDEDT.minD = bins[1]
+            sDEDT.maxD = bins[-1]
+            distData = [sDEDT.minD,sDEDT.maxD]
+            print("Minimum distance:",sDEDT.minD,"Maximum distance:",sDEDT.maxD)
+        else:
+            distData = None
+        distData = comm.bcast(distData, root=0)
+        sDEDT.minD = distData[0]
+        sDEDT.maxD = distData[1]
+
 
     return sDEDT

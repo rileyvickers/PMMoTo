@@ -88,15 +88,19 @@ class Set(object):
         self.nodes = np.zeros([numNodes,3],dtype=np.int64)
         self.boundaryNodes = np.zeros(numBoundaryNodes,dtype=np.int64)
         self.boundaryFaces = np.zeros(26,dtype=np.uint8)
+        self.boundaryNodeID = np.zeros([numBoundaryNodes,3],dtype=np.int64)
 
     def getNodes(self,n,i,j,k):
         self.nodes[n,0] = i
         self.nodes[n,1] = j
         self.nodes[n,2] = k
 
-    def getBoundaryNodes(self,n,ID,ID2):
+    def getBoundaryNodes(self,n,ID,ID2,i,j,k):
         self.boundaryNodes[n] = ID
         self.boundaryFaces[ID2] = 1
+        self.boundaryNodeID[n,0] = i
+        self.boundaryNodeID[n,1] = j
+        self.boundaryNodeID[n,2] = k
 
 
 class Node(object):
@@ -125,6 +129,7 @@ class Drainage(object):
         self.inletDirection = 0
         self.probeD = 0
         self.probeR = 0
+        self.pC = 0
         self.ind = None
         self.nwp = None
         self.globalIndexStart = 0
@@ -133,8 +138,8 @@ class Drainage(object):
         self.matchedSets = []
         self.nwpNodes = 0
         self.totalnwpNodes = np.zeros(1,dtype=np.uint64)
-        self.boundInlet = 0
         self.nwpRes = np.zeros([3,2])
+        self.Sets = []
 
     def getDiameter(self,pc):
         if pc == 0:
@@ -143,6 +148,10 @@ class Drainage(object):
         else:
             self.probeR = 2.*self.gamma/pc
             self.probeD = 2.*self.probeR
+
+    def getpC(self,radius):
+        print(radius)
+        self.pC = 2.*self.gamma/radius
 
     def probeDistance(self):
         self.ind = np.where( (self.edt.EDT >= self.probeR) & (self.subDomain.grid == 1),1,0).astype(np.uint8)
@@ -164,7 +173,7 @@ class Drainage(object):
         cdef cnp.int8_t [:,:] nodeInfoBin
         nodeInfoBin = self.nodeInfoBin
 
-        self.nodeInfoIndex = np.zeros([self.numNWP,4],dtype=np.uint64)
+        self.nodeInfoIndex = np.zeros([self.numNWP,7],dtype=np.uint64)
         cdef cnp.uint64_t [:,:] nodeInfoIndex
         nodeInfoIndex = self.nodeInfoIndex
 
@@ -231,19 +240,18 @@ class Drainage(object):
                             jLoc = jStart+j
                             kLoc = kStart+k
 
-                            if perAny:
-                                if iLoc >= dN0:
-                                    iLoc = 0
-                                elif iLoc < 0:
-                                    iLoc = dN0-1
-                                if jLoc >= dN1:
-                                    jLoc = 0
-                                elif jLoc < 0:
-                                    jLoc = dN1-1
-                                if kLoc >= dN2:
-                                    kLoc = 0
-                                elif kLoc < 0:
-                                    kLoc =dN2-1
+                            if iLoc >= dN0:
+                                iLoc = 0
+                            elif iLoc < 0:
+                                iLoc = dN0-1
+                            if jLoc >= dN1:
+                                jLoc = 0
+                            elif jLoc < 0:
+                                jLoc = dN1-1
+                            if kLoc >= dN2:
+                                kLoc = 0
+                            elif kLoc < 0:
+                                kLoc = dN2-1
 
                             globIndex = iLoc*dN1*dN2 +  jLoc*dN2 +  kLoc
 
@@ -270,6 +278,10 @@ class Drainage(object):
                             nodeInfoIndex[c,1] = j
                             nodeInfoIndex[c,2] = k
                             nodeInfoIndex[c,3] = globIndex
+                            nodeInfoIndex[c,4] = iLoc
+                            nodeInfoIndex[c,5] = jLoc
+                            nodeInfoIndex[c,6] = kLoc
+
                             nodeTable[i,j,k] = c
                             c = c + 1
 
@@ -364,7 +376,7 @@ class Drainage(object):
         setInlet = False
         setBoundary = False
 
-        _nodeIndex = np.zeros([self.numNWP,5],dtype=np.int64)
+        _nodeIndex = np.zeros([self.numNWP,8],dtype=np.int64)
         cdef cnp.int64_t [:,::1] nodeIndex
         nodeIndex = _nodeIndex
 
@@ -403,6 +415,12 @@ class Drainage(object):
                         nodeIndex[numNodes,0] = nodeInfoIndex[ID,0]
                         nodeIndex[numNodes,1] = nodeInfoIndex[ID,1]
                         nodeIndex[numNodes,2] = nodeInfoIndex[ID,2]
+
+                        nodeIndex[numNodes,5] = nodeInfoIndex[ID,4]
+                        nodeIndex[numNodes,6] = nodeInfoIndex[ID,5]
+                        nodeIndex[numNodes,7] = nodeInfoIndex[ID,6]
+
+
                         if currentNode[0]:
                             setBoundary = True
                             numBoundNodes = numBoundNodes + 1
@@ -458,7 +476,7 @@ class Drainage(object):
                     index = numNodes-numSetNodes+n
                     self.Sets[setCount].getNodes(n,nodeIndex[index,0],nodeIndex[index,1],nodeIndex[index,2])
                     if nodeIndex[index,3] > -1:
-                        self.Sets[setCount].getBoundaryNodes(bN,nodeIndex[index,4],nodeIndex[index,3])
+                        self.Sets[setCount].getBoundaryNodes(bN,nodeIndex[index,4],nodeIndex[index,3],nodeIndex[index,5],nodeIndex[index,6],nodeIndex[index,7])
                         bN = bN + 1
 
                 setCount = setCount + 1
@@ -506,8 +524,6 @@ class Drainage(object):
                     else:
                         if neighborProc not in self.boundaryData[self.subDomain.ID]['NeighborProcID'].keys():
                             self.boundaryData[self.subDomain.ID]['NeighborProcID'][neighborProc] = {'setID':{}}
-                        if bSet.inlet:
-                            self.boundInlet = 1
                         self.boundaryData[self.subDomain.ID]['NeighborProcID'][neighborProc]['setID'][bSet.localID] = {'boundaryNodes':bSet.boundaryNodes,'ProcID':self.subDomain.ID,'inlet':bSet.inlet}
 
             if (np.sum(bSet.boundaryFaces) == 0):
@@ -520,6 +536,8 @@ class Drainage(object):
 
         otherBD = {}
 
+
+        ### Sort Out Own Proc Bondary Data and Other Procs Boundary Data
         countOwnSets = 0
         countOtherSets = 0
         for procID in self.boundaryData.keys():
@@ -535,12 +553,12 @@ class Drainage(object):
 
         numSets = np.max([countOwnSets,countOtherSets])
 
+        ### Loop through own Proc Boundary Data to Find a Match
         c = 0
         for nbProc in ownBD['NeighborProcID'].keys():
             for ownSet in ownBD['NeighborProcID'][nbProc]['setID'].keys():
                 ownNodes = ownBD['NeighborProcID'][nbProc]['setID'][ownSet]['boundaryNodes']
                 ownInlet = ownBD['NeighborProcID'][nbProc]['setID'][ownSet]['inlet']
-                numOwnNodes = len(ownNodes)
                 otherSetKeys = list(otherBD[nbProc]['NeighborProcID'][nbProc]['setID'].keys())
                 numOtherSetKeys = len(otherSetKeys)
 
@@ -675,7 +693,7 @@ class Drainage(object):
         # if (self.subDomain.boundaryID[1] == 1 and self.Domain.inlet[1] == 1):
         #     self.nwp[:,-1,:] = 1
         # if (self.subDomain.boundaryID[2] == -1 and self.Domain.inlet[2] == -1):
-        #     self.nwp[:,:,0] = 1
+        #     self.nwp[:,:,0:8] = 1
         # if (self.subDomain.boundaryID[2] == 1 and self.Domain.inlet[2] == 1):
         #     self.nwp[:,:,-1] = 1
 
@@ -685,12 +703,17 @@ class Drainage(object):
             nwpDist = nwpDist[-1:,:,:]
         elif self.nwpRes[0,1]:
             nwpDist = nwpDist[1:,:,:]
-        self.nwpFinal = np.where( (nwpDist ==  1) & (self.subDomain.grid == 1),1,0)
+        self.nwpFinal = np.copy(self.subDomain.grid)
+        self.nwpFinal = np.where( (nwpDist ==  1) & (self.subDomain.grid == 1),2,self.nwpFinal)
+        #self.nwpFinal = np.where( (nwpDist ==  1) & (self.subDomain.grid == 1),1,0)
+        if (self.subDomain.boundaryID[2] == -1 and self.Domain.inlet[2] == -1):
+            self.nwpFinal[:,:,0:8] = 2
         own = self.subDomain.ownNodes
         ownGrid =  self.nwpFinal[own[0][0]:own[0][1],
                              own[1][0]:own[1][1],
                              own[2][0]:own[2][1]]
-        self.nwpNodes = np.sum(ownGrid)
+        #self.nwpNodes = np.sum(ownGrid)
+        self.nwpNodes = np.sum(np.where(ownGrid==2,1,0))
 
     def drainCOMM(self):
         self.dataRecvFace,self.dataRecvEdge,self.dataRecvCorner = communication.subDomainComm(self.Orientation,self.subDomain,self.boundaryData[self.subDomain.ID]['NeighborProcID'])
@@ -727,13 +750,21 @@ class Drainage(object):
 
 
 
-def calcDrainage(rank,size,pc,domain,subDomain,inlet,EDT):
+def calcDrainage(rank,size,pc,domain,subDomain,inlet,EDT,info = False):
+
 
     for p in pc:
         if p == 0:
             sW = 1
         else:
+
             drain = Drainage(Domain = domain, Orientation = subDomain.Orientation, subDomain = subDomain, edt = EDT, gamma = 1., inlet = inlet)
+            if info:
+                drain.getpC(EDT.maxD)
+                print("Minimum pc",drain.pC)
+                pCMax = drain.getpC(EDT.minD)
+                print("Maximum pc",drain.pC)
+
             drain.getDiameter(p)
             drain.probeDistance()
             numNWPSum = np.zeros(1,dtype=np.uint64)
