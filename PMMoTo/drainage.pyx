@@ -679,23 +679,6 @@ class Drainage(object):
         for n in NWNodes:
             self.nwp[n[0],n[1],n[2]] = 1
 
-        # if (self.subDomain.boundaryID[0] == -1 and self.Domain.inlet[0] == -1):
-        #     #self.nwp = np.pad(self.nwp,( (0,1), (0,0), (0,0) ), 'constant', constant_values=1)
-        #     #self.nwpRes[0,0] = 1
-        #     self.nwp[0,:,:] = 1
-        # if (self.subDomain.boundaryID[0] == 1 and self.Domain.inlet[0] == 1):
-        #     pass#self.nwp = np.pad(self.nwp,( (1,0), (0,0), (0,0) ), 'constant', constant_values=1)
-        #     #self.nwpRes[0,1] = 1
-        #     #pass#self.nwp[-1,:,:] = 1
-        # if (self.subDomain.boundaryID[1] == -1 and self.Domain.inlet[1] == -1):
-        #     self.nwp[:,0,:] = 1
-        # if (self.subDomain.boundaryID[1] == 1 and self.Domain.inlet[1] == 1):
-        #     self.nwp[:,-1,:] = 1
-        # if (self.subDomain.boundaryID[2] == -1 and self.Domain.inlet[2] == -1):
-        #     self.nwp[:,:,0:8] = 1
-        # if (self.subDomain.boundaryID[2] == 1 and self.Domain.inlet[2] == 1):
-        #     self.nwp[:,:,-1] = 1
-
     def finalizeNWP(self,nwpDist):
 
         if self.nwpRes[0,0]:
@@ -703,10 +686,8 @@ class Drainage(object):
         elif self.nwpRes[0,1]:
             nwpDist = nwpDist[1:,:,:]
         self.nwpFinal = np.copy(self.subDomain.grid)
-        self.nwpFinal = np.where( (nwpDist ==  1) & (self.subDomain.grid == 1),2,self.nwpFinal)\
-
-        if (self.subDomain.boundaryID[2] == -1 and self.Domain.inlet[2] == -1):
-            self.nwpFinal[:,:,0:8] = 2
+        self.nwpFinal = np.where( (nwpDist ==  1) & (self.subDomain.grid == 1),2,self.nwpFinal)
+        self.nwpFinal = np.where( (self.subDomain.res == 1),2,self.nwpFinal)
 
         own = self.subDomain.ownNodes
         ownGrid =  self.nwpFinal[own[0][0]:own[0][1],
@@ -792,7 +773,6 @@ def calcDrainage(rank,size,pc,domain,subDomain,inlet,EDT,info = False):
                 comm.Allreduce( [drain.nwpNodes, MPI.INT], [drain.totalnwpNodes, MPI.INT], op = MPI.SUM )
         if rank == 0:
             sW = 1.-drain.totalnwpNodes[0]/subDomain.totalPoreNodes[0]
-            #print("Wetting phase saturation is: %e at pC of %e" %(sW,p))
-            print(p,sW)
+            print("Wetting phase saturation is: %e at pC of %e" %(sW,p))
 
     return drain

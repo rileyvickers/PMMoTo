@@ -44,14 +44,15 @@ def my_function():
     subDomains = [2,2,2]
     #nodes = [928,928,1340]
     #nodes = [696,696,1005]
-    #nodes = [464,464,670]
-    nodes = [232,232,335]
+    nodes = [464,464,670]
+    #nodes = [232,232,335]
     #nodes = [116,116,168]
     periodic = [True,True,False]
     inlet  = [0,0,-1]
     outlet = [0,0, 1]
     #domainFile = open('testDomains/pack_sub.out', 'r')
     domainFile = open('kelseySpherePackTests/pack_res.out', 'r')
+    res = 8 ### Assume that the reservoir is always at the inlet!
 
     numSubDomains = np.prod(subDomains)
 
@@ -72,7 +73,7 @@ def my_function():
     #pC = np.linspace(1,25,96*4+1)
 
 
-    domain,sDL = PMMoTo.genDomainSubDomain(rank,size,subDomains,nodes,periodic,inlet,outlet,"Sphere",domainFile,PMMoTo.readPorousMediaXYZR)
+    domain,sDL = PMMoTo.genDomainSubDomain(rank,size,subDomains,nodes,periodic,inlet,outlet,res,"Sphere",domainFile,PMMoTo.readPorousMediaXYZR)
     sDEDTL = PMMoTo.calcEDT(rank,size,domain,sDL,sDL.grid,stats = True)
     if drain:
         drainL = PMMoTo.calcDrainage(rank,size,pC,domain,sDL,inlet,sDEDTL,info=False)

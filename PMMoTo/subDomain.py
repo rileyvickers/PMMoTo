@@ -261,6 +261,7 @@ class subDomain(object):
         self.globalBoundary = np.zeros([self.Orientation.numFaces],dtype = np.uint8)
         self.inlet = np.zeros([self.Orientation.numFaces],dtype = np.uint8)
         self.outlet = np.zeros([self.Orientation.numFaces],dtype = np.uint8)
+        self.res  = None
         self.loopInfo = np.zeros([self.Orientation.numFaces+1,3,2],dtype = np.int64)
 
     def getInfo(self):
@@ -509,7 +510,26 @@ class subDomain(object):
                              own[2][0]:own[2][1]]
         self.poreNodes = np.sum(ownGrid)
 
-def genDomainSubDomain(rank,size,subDomains,nodes,periodic,inlet,outlet,dataFormat,domainFile,dataRead):
+
+    def getReservoir(self,resInd):
+        self.res = np.zeros_like(self.grid)
+        if  self.boundaryID[0] > 0 and self.Domain.inlet[0] > 0:
+            self.res[-resInd:,:,:] = 1
+        elif self.boundaryID[0] < 0 and self.Domain.inlet[0] < 0:
+            self.res[0:resInd,:,:] = 1
+        elif self.boundaryID[1] > 0 and self.Domain.inlet[1] > 0:
+            self.res[:,-resInd:,:] = 1
+        elif self.boundaryID[1] < 0 and self.Domain.inlet[1] < 0:
+            self.res[:,0:resInd,:] = 1
+        elif self.boundaryID[2] > 0 and self.Domain.inlet[2] > 0:
+            self.res[:,:,-resInd:] = 1
+        elif self.boundaryID[2] < 0 and self.Domain.inlet[2] < 0:
+            self.res[:,:,0:resInd] = 1
+        print(self.Domain.inlet)
+
+
+
+def genDomainSubDomain(rank,size,subDomains,nodes,periodic,inlet,outlet,resInd,dataFormat,domainFile,dataRead):
 
     numSubDomains = np.prod(subDomains)
     if rank == 0:
@@ -523,13 +543,10 @@ def genDomainSubDomain(rank,size,subDomains,nodes,periodic,inlet,outlet,dataForm
     if domainFile is not None:
         domainSize,sphereData = dataRead(domainFile)
     if domainFile is None:
-        #domainSize = np.array([[0,nodes[0]],[0,nodes[1]],[0,nodes[2]]])
         domainSize = np.array([[0.,14.],[-1.5,1.5],[-1.5,1.5]])
     domain = Domain(nodes = nodes, domainSize = domainSize, subDomains = subDomains, periodic = periodic, inlet=inlet, outlet=outlet)
     domain.getdXYZ()
     domain.getSubNodes()
-
-
 
     orient = Orientation()
 
@@ -542,6 +559,8 @@ def genDomainSubDomain(rank,size,subDomains,nodes,periodic,inlet,outlet,dataForm
     if dataFormat == "InkBotle":
         sD.genDomainInkBottle()
     sD.getBoundaryInfo()
+    if resInd > 0:
+        sD.getReservoir(resInd)
     sD.getPorosity()
     comm.Allreduce( [sD.poreNodes, MPI.INT], [sD.totalPoreNodes, MPI.INT], op = MPI.SUM )
 
