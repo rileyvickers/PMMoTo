@@ -150,7 +150,6 @@ class Drainage(object):
             self.probeD = 2.*self.probeR
 
     def getpC(self,radius):
-        print(radius)
         self.pC = 2.*self.gamma/radius
 
     def probeDistance(self):
@@ -704,15 +703,15 @@ class Drainage(object):
         elif self.nwpRes[0,1]:
             nwpDist = nwpDist[1:,:,:]
         self.nwpFinal = np.copy(self.subDomain.grid)
-        self.nwpFinal = np.where( (nwpDist ==  1) & (self.subDomain.grid == 1),2,self.nwpFinal)
-        #self.nwpFinal = np.where( (nwpDist ==  1) & (self.subDomain.grid == 1),1,0)
+        self.nwpFinal = np.where( (nwpDist ==  1) & (self.subDomain.grid == 1),2,self.nwpFinal)\
+
         if (self.subDomain.boundaryID[2] == -1 and self.Domain.inlet[2] == -1):
             self.nwpFinal[:,:,0:8] = 2
+
         own = self.subDomain.ownNodes
         ownGrid =  self.nwpFinal[own[0][0]:own[0][1],
                              own[1][0]:own[1][1],
                              own[2][0]:own[2][1]]
-        #self.nwpNodes = np.sum(ownGrid)
         self.nwpNodes = np.sum(np.where(ownGrid==2,1,0))
 
     def drainCOMM(self):

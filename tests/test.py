@@ -9,6 +9,7 @@ import edt
 import sys
 import time
 import PMMoTo
+import math
 
 import cProfile
 
@@ -41,22 +42,111 @@ def my_function():
         start_time = time.time()
 
     subDomains = [2,2,2]
-    nodes = [601,601,601]
-    periodic = [False,False,False]
+    #nodes = [928,928,1340]
+    #nodes = [696,696,1005]
+    #nodes = [464,464,670]
+    nodes = [232,232,335]
+    #nodes = [116,116,168]
+    periodic = [True,True,False]
     inlet  = [0,0,-1]
     outlet = [0,0, 1]
-    domainFile = open('testDomains/pack_sub.out', 'r')
+    #domainFile = open('testDomains/pack_sub.out', 'r')
+    domainFile = open('kelseySpherePackTests/pack_res.out', 'r')
 
     numSubDomains = np.prod(subDomains)
 
 
-    drain = False
+    drain = True
     testSerial = False
 
-    domain,sDL = PMMoTo.genDomainSubDomain(rank,size,subDomains,nodes,periodic,"Sphere",domainFile,PMMoTo.readPorousMediaXYZR)
-    sDEDTL = PMMoTo.calcEDT(rank,size,domain,sDL,sDL.grid)
+    #pC = [5.295714695]
+    #pC = [10.85910666]
+    pC = [11.43063876]
+    #pC = [1,2,3]
+    #pC = [100]
+    #pC = [75,100,125,150,175,200]
+
+    #pC = [3.35,3.53,3.91,8.02,11.48,12.08,12.72,13.39,14.84,17.31,21.25,30.42]
+    # pC = [1,2,3,3.45653767,3.638455891,4.031533718,5,6,7,8,8.266844475,8.5,9,9.5,10,10.5,11,11.5,11.83790489,12.4609337,
+    #       13.11679317,13.80715071,14,15,15.29872491,16,17.84376896,18,19,20,21.90730472,31.37079913,35,40,45,50,75,100,125,150,175,200]
+    #pC = np.linspace(1,25,96*4+1)
+
+
+    domain,sDL = PMMoTo.genDomainSubDomain(rank,size,subDomains,nodes,periodic,inlet,outlet,"Sphere",domainFile,PMMoTo.readPorousMediaXYZR)
+    sDEDTL = PMMoTo.calcEDT(rank,size,domain,sDL,sDL.grid,stats = True)
     if drain:
-        drainL = PMMoTo.calcDrainage(rank,size,domain,sDL,inlet,sDEDTL)
+        drainL = PMMoTo.calcDrainage(rank,size,pC,domain,sDL,inlet,sDEDTL,info=False)
+
+
+
+    #### Generate Slice
+    slice = 0 # 0 = x, 1= y, 2 = z
+    sliceLoc = domain.domainSize[0,1]/2
+
+    if slice == 0:
+        sliceLow  = sliceLoc - domain.dX
+        sliceHigh = sliceLoc + domain.dX
+        indID = np.where( (sDL.x > sliceLow) & (sDL.x < sliceHigh) )[0]
+        totalNodes = indID.size*(sDL.ownNodes[1][1]-sDL.ownNodes[1][0])*(sDL.ownNodes[2][1]-sDL.ownNodes[2][0])
+        printGridOut = np.zeros([totalNodes,4])
+
+        c = 0
+        for i in indID:
+            for j in range(sDL.ownNodes[1][0],sDL.ownNodes[1][1]):
+                for k in range(sDL.ownNodes[2][0],sDL.ownNodes[2][1]):
+                    printGridOut[c,0] = sDL.x[i]
+                    printGridOut[c,1] = sDL.y[j]
+                    printGridOut[c,2] = sDL.z[k]
+                    printGridOut[c,3] = drainL.nwpFinal[i,j,k]
+                    c = c + 1
+        header = "x,y,z,NWPFinal"
+        file = "dataDump/3dSlice_"+str(rank)+".csv"
+        np.savetxt(file,printGridOut, delimiter=',',header=header)
+
+    elif slice == 1:
+        sliceLow  = sliceLoc - domain.dY
+        sliceHigh = sliceLoc + domain.dY
+        indID = np.where( (sDL.y > sliceLow) & (sDL.y < sliceHigh) )
+
+        totalNodes = indID.size*(sDL.ownNodes[0][1]-sDL.ownNodes[0][0])*(sDL.ownNodes[2][1]-sDL.ownNodes[2][0])
+        printGridOut = np.zeros([totalNodes,4])
+
+        c = 0
+        for i in range(sDL.ownNodes[0][0],sDL.ownNodes[0][1]):
+            for j in indID:
+                for k in range(sDL.ownNodes[2][0],sDL.ownNodes[2][1]):
+                    printGridOut[c,0] = sDL.x[i]
+                    printGridOut[c,1] = sDL.y[j]
+                    printGridOut[c,2] = sDL.z[k]
+                    printGridOut[c,3] = drainL.nwpFinal[i,j,k]
+                    c = c + 1
+        header = "x,y,z,NWPFinal"
+        file = "dataDump/3dSlice_"+str(rank)+".csv"
+        np.savetxt(file,printGridOut, delimiter=',',header=header)
+
+
+    elif slice == 2:
+        sliceLow  = sliceLoc - domain.dZ
+        sliceHigh = sliceLoc + domain.dZ
+        indID = np.where( (sDL.z > sliceLow) & (sDL.z < sliceHigh) )
+
+        totalNodes = indID.size*(sDL.ownNodes[0][1]-sDL.ownNodes[0][0])*(sDL.ownNodes[1][1]-sDL.ownNodes[1][0])
+        printGridOut = np.zeros([totalNodes,4])
+
+        c = 0
+        for i in range(sDL.ownNodes[0][0],sDL.ownNodes[0][1]):
+            for j in range(sDL.ownNodes[1][0],sDL.ownNodes[1][1]):
+                for k in indID:
+                    printGridOut[c,0] = sDL.x[i]
+                    printGridOut[c,1] = sDL.y[j]
+                    printGridOut[c,2] = sDL.z[k]
+                    printGridOut[c,3] = drainL.nwpFinal[i,j,k]
+                    c = c + 1
+        header = "x,y,z,NWPFinal"
+        file = "dataDump/3dSlice_"+str(rank)+".csv"
+        np.savetxt(file,printGridOut, delimiter=',',header=header)
+
+
 
 
     if testSerial:
@@ -87,13 +177,14 @@ def my_function():
 
 
         if rank==0:
-            testAlgo = True
+            testAlgo = False
             if testAlgo:
 
                 startTime = time.time()
 
                 domainFile.close()
-                domainFile = open('testDomains/pack_sub.out', 'r')
+                #domainFile = open('testDomains/pack_sub.out', 'r')
+                domainFile = open('kelseySpherePackTests/pack_res.out', 'r')
                 domainSize,sphereData = PMMoTo.readPorousMediaXYZR(domainFile)
 
                 ##### To GENERATE SINGLE PROC TEST CASE ######
@@ -121,26 +212,50 @@ def my_function():
                 endTime = time.time()
 
                 print("Serial Time:",endTime-startTime)
-                print(indTrue.shape)
+
+
+                printDISTANCEOut = np.zeros([realDT.shape[0]*realDT.shape[1]*realDT.shape[2]*2,4])
+                c = 0
+                for i in range(0,realDT.shape[0]):
+                    for j in range(0,realDT.shape[1]):
+                        for k in range(0,realDT.shape[2]):
+                            printDISTANCEOut[c,0] = i
+                            printDISTANCEOut[c,1] = j
+                            printDISTANCEOut[c,2] = k
+                            if gridOut[i,j,k] == 1:
+                                printDISTANCEOut[c,3] = realDT[i,j,k]
+                            else:
+                                printDISTANCEOut[c,3] = -1
+                            c = c + 1
+                header = "X,Y,Z,EDT"
+                file = "dataDump/Distance.csv"
+                np.savetxt(file,printDISTANCEOut, delimiter=',',header=header)
 
                 if periodic[0] and not periodic[1] and not periodic[2]:
                     gridOut = gridOut[pG[0]:-pG[0],:,:]
                     realDT = realDT[pG[0]:-pG[0],:,:]
+                    edtV = edtV[pG[0]:-pG[0],:,:]
                 elif not periodic[0] and periodic[1] and not periodic[2]:
                     gridOut = gridOut[:,pG[1]:-pG[1],:]
                     realDT = realDT[:,pG[1]:-pG[1],:]
+                    edtV = edtV[:,pG[1]:-pG[1],:]
                 elif not periodic[0] and not periodic[1] and periodic[2]:
                     gridOut = gridOut[:,:,pG[2]:-pG[2]]
                     realDT = realDT[:,:,pG[2]:-pG[2]]
+                    edtV = edtV[:,:,pG[2]:-pG[2]]
                 elif periodic[0] and not periodic[1] and periodic[2]:
                     gridOut = gridOut[pG[0]:-pG[0],:,pG[2]:-pG[2]]
                     realDT = realDT[pG[0]:-pG[0],:,pG[2]:-pG[2]]
+                    edtV = edtV[pG[0]:-pG[0],:,pG[2]:-pG[2]]
                 elif periodic[0] and periodic[1] and not periodic[2]:
+                    print("HELLoO PERIODIC")
                     gridOut = gridOut[pG[0]:-pG[0],pG[1]:-pG[1],:]
                     realDT = realDT[pG[0]:-pG[0],pG[1]:-pG[1],:]
+                    edtV = edtV[pG[0]:-pG[0],pG[1]:-pG[1],:]
                 elif not periodic[0] and periodic[1] and periodic[2]:
                     gridOut = gridOut[:,pG[1]:-pG[1],pG[2]:-pG[2]]
                     realDT = realDT[:,pG[1]:-pG[1],pG[2]:-pG[2]]
+                    edtV = edtV[:,pG[1]:-pG[1],pG[2]:-pG[2]]
                 elif periodic[0] and periodic[1] and periodic[2]:
                     gridOut = gridOut[pG[0]:-pG[0],pG[1]:-pG[1],pG[2]:-pG[2]]
                     realDT = realDT[pG[0]:-pG[0],pG[1]:-pG[1],pG[2]:-pG[2]]
@@ -196,39 +311,64 @@ def my_function():
                 print("LI EDT Error Norm 2",np.max(diffEDT2) )
                 print("LI EDT Error Norm 2",np.max(realDT-edtV) )
 
-                #
-                # for nn in range(0,numSubDomains):
-                #     printGridOut = np.zeros([sD[nn].grid.size,7])
-                #     c = 0
-                #     for i in range(0,sD[nn].grid.shape[0]):
-                #         for j in range(0,sD[nn].grid.shape[1]):
-                #             for k in range(0,sD[nn].grid.shape[2]):
-                #                 printGridOut[c,0] = sD[nn].x[i]#sDAll[nn].indexStart[0] + i #sDAll[nn].x[i]
-                #                 printGridOut[c,1] = sD[nn].y[j]#sDAll[nn].indexStart[1] + j#sDAll[nn].y[j]
-                #                 printGridOut[c,2] = sD[nn].z[k]#sDAll[nn].indexStart[2] + k#sDAll[nn].z[k]
-                #                 printGridOut[c,3] = sDdrain[nn].nwpFinal[i,j,k]
-                #                 printGridOut[c,4] = sD[nn].grid[i,j,k]
-                #                 printGridOut[c,5] = sDEDT[nn].EDT[i,j,k]
-                #                 printGridOut[c,6] = sDdrain[nn].nwp[i,j,k]
-                #                 c = c + 1
-                #
-                #     header = "x,y,z,NWPFinal,Grid,EDT,NWP"
-                #     file = "dataDump/3dsubGridIndicator_"+str(nn)+".csv"
-                #     np.savetxt(file,printGridOut, delimiter=',',header=header)
+                # printDISTANCEOut = np.zeros([checkEDT.shape[0]*checkEDT.shape[1]*checkEDT.shape[2]*2,1])
+                # c = 0
+                # for i in range(0,checkEDT.shape[0]):
+                #     for j in range(0,checkEDT.shape[1]):
+                #         for k in range(0,checkEDT.shape[2]):
+                #             # printDISTANCEOut[c,0] = i
+                #             # printDISTANCEOut[c,1] = j
+                #             # printDISTANCEOut[c,2] = k
+                #             if gridOut[i,j,k] == 1:
+                #                 printDISTANCEOut[c,0] = realDT[i,j,k]
+                #             else:
+                #                 printDISTANCEOut[c,0] = -1
+                #             c = c + 1
+                # header = "EDT"
+                # file = "dataDump/Distance.csv"
+                # np.savetxt(file,printDISTANCEOut, delimiter=',',header=header)
+                # file = "dataDump/Distance.npy"
+                # np.savetxt(file,printDISTANCEOut)
+
+
+
+
+
+            for nn in range(0,numSubDomains):
+                #numSum = np.sum(sD[nn].grid.size)
+                #printGridOut = np.zeros([sD[nn].grid.shape[1]*sD[nn].grid.shape[2]*2,4])
+                printGridOut = np.zeros([sD[nn].grid.size,6])
+                c = 0
+                for i in range(0,sD[nn].grid.shape[0]):
+                    for j in range(0,sD[nn].grid.shape[1]):
+                        for k in range(0,sD[nn].grid.shape[2]):
+                            #if sD[nn].grid[i,j,k] == 1:
+                                printGridOut[c,0] = sD[nn].x[i]#sDAll[nn].indexStart[0] + i #sDAll[nn].x[i]
+                                printGridOut[c,1] = sD[nn].y[j]#sDAll[nn].indexStart[1] + j#sDAll[nn].y[j]
+                                printGridOut[c,2] = sD[nn].z[k]#sDAll[nn].indexStart[2] + k#sDAll[nn].z[k]
+                                printGridOut[c,3] = sDdrain[nn].nwpFinal[i,j,k]
+                                # printGridOut[c,4] = sD[nn].grid[i,j,k]
+                                # printGridOut[c,5] = sDEDT[nn].EDT[i,j,k]
+                                # printGridOut[c,6] = sDdrain[nn].nwp[i,j,k]
+                                c = c + 1
+
+                header = "x,y,z,NWPFinal"#,Grid,Dist"
+                file = "dataDump/3dsubGridIndicator_"+str(nn)+".csv"
+                np.savetxt(file,printGridOut, delimiter=',',header=header)
 
                 #
                 # for nn in range(0,numSubDomains):
                 #     numSets = sDdrain[nn].setCount
                 #     totalNodes = 0
                 #     for n in range(0,numSets):
-                #         totalNodes = totalNodes + len(sDdrain[nn].Sets[n].nodes)
+                #         totalNodes = totalNodes + len(sDdrain[nn].Sets[n].boundaryNodes)
                 #     printSetOut = np.zeros([totalNodes,7])
                 #     c = 0
                 #     for setID in range(0,numSets):
-                #         for n in range(0,len(sDdrain[nn].Sets[setID].nodes)):
-                #             printSetOut[c,0] = sDdrain[nn].Sets[setID].nodes[n].globalIndex[0]
-                #             printSetOut[c,1] = sDdrain[nn].Sets[setID].nodes[n].globalIndex[1]
-                #             printSetOut[c,2] = sDdrain[nn].Sets[setID].nodes[n].globalIndex[2]
+                #         for n in range(0,len(sDdrain[nn].Sets[setID].boundaryNodes)):
+                #             printSetOut[c,0] = sDdrain[nn].Sets[setID].boundaryNodeID[n,0]
+                #             printSetOut[c,1] = sDdrain[nn].Sets[setID].boundaryNodeID[n,1]
+                #             printSetOut[c,2] = sDdrain[nn].Sets[setID].boundaryNodeID[n,2]
                 #             printSetOut[c,3] = sDdrain[nn].Sets[setID].globalID
                 #             printSetOut[c,4] = nn
                 #             printSetOut[c,5] = sDdrain[nn].Sets[setID].inlet
@@ -240,22 +380,19 @@ def my_function():
                 #     np.savetxt(file,printSetOut, delimiter=',',header=header)
 
 
-                for nn in range(0,numSubDomains):
-                    print(sD[nn].indexStart,sD[nn].ownNodes)
-
                 #printGridOut = np.zeros([grid.size,5])
-                c = 0
-                for i in range(0,grid.shape[0]):
-                    for j in range(0,grid.shape[1]):
-                        for k in range(0,grid.shape[2]):
-                            if diffEDT[i,j,k] > 1.e-6:
-                                print(i,j,k,x[i],y[j],z[k],diffEDT[i,j,k],checkEDT[i,j,k],realDT[i,j,k],indTrue[0][i,j,k],indTrue[1][i,j,k],indTrue[2][i,j,k])
-                                # printGridOut[c,0] = x[i]
-                                # printGridOut[c,1] = y[j]
-                                # printGridOut[c,2] = z[k]
-                                # printGridOut[c,3] = gridOut[i,j,k]
-                                # printGridOut[c,4] = diffEDT[i,j,k]
-                                c = c + 1
+                # c = 0
+                # for i in range(0,grid.shape[0]):
+                #     for j in range(0,grid.shape[1]):
+                #         for k in range(0,grid.shape[2]):
+                #             if diffEDT[i,j,k] > 1.e-6:
+                #                 print(i,j,k,x[i],y[j],z[k],diffEDT[i,j,k],checkEDT[i,j,k],realDT[i,j,k],indTrue[0][i,j,k],indTrue[1][i,j,k],indTrue[2][i,j,k])
+                #                 # printGridOut[c,0] = x[i]
+                #                 # printGridOut[c,1] = y[j]
+                #                 # printGridOut[c,2] = z[k]
+                #                 # printGridOut[c,3] = gridOut[i,j,k]
+                #                 # printGridOut[c,4] = diffEDT[i,j,k]
+                #                 c = c + 1
 
                 # header = "x,y,z,Grid,EDT"
                 # file = "dataDump/3dGrid.csv"
