@@ -15,7 +15,6 @@ comm = MPI.COMM_WORLD
 
 class Orientation(object):
     def __init__(self):
-
         self.numFaces = 6
         self.numEdges = 12
         self.numCorners = 8
@@ -28,12 +27,12 @@ class Orientation(object):
         self.sendCSlices = np.empty([self.numCorners,3],dtype=object)
         self.recvCSlices = np.empty([self.numCorners,3],dtype=object)
 
-        self.faces=  {0:{'ID':(1,0,0),  'oppIndex':1, 'argOrder':np.array([0,1,2],dtype=np.uint8), 'dir':-1},
-                      1:{'ID':(-1,0,0), 'oppIndex':0, 'argOrder':np.array([0,1,2],dtype=np.uint8), 'dir':1},
-                      2:{'ID':(0,1,0),  'oppIndex':3, 'argOrder':np.array([1,0,2],dtype=np.uint8), 'dir':-1},
-                      3:{'ID':(0,-1,0), 'oppIndex':2, 'argOrder':np.array([1,0,2],dtype=np.uint8), 'dir':1},
-                      4:{'ID':(0,0,1),  'oppIndex':5, 'argOrder':np.array([2,0,1],dtype=np.uint8), 'dir':-1},
-                      5:{'ID':(0,0,-1), 'oppIndex':4, 'argOrder':np.array([2,0,1],dtype=np.uint8), 'dir':1},
+        self.faces=  {0:{'ID':(1,0,0), 'Index':1, 'oppIndex':1, 'argOrder':np.array([0,1,2],dtype=np.uint8), 'dir':-1},
+                      1:{'ID':(-1,0,0),'Index':0, 'oppIndex':0, 'argOrder':np.array([0,1,2],dtype=np.uint8), 'dir':1},
+                      2:{'ID':(0,1,0), 'Index':1, 'oppIndex':3, 'argOrder':np.array([1,0,2],dtype=np.uint8), 'dir':-1},
+                      3:{'ID':(0,-1,0),'Index':0, 'oppIndex':2, 'argOrder':np.array([1,0,2],dtype=np.uint8), 'dir':1},
+                      4:{'ID':(0,0,1), 'Index':1, 'oppIndex':5, 'argOrder':np.array([2,0,1],dtype=np.uint8), 'dir':-1},
+                      5:{'ID':(0,0,-1),'Index':0, 'oppIndex':4, 'argOrder':np.array([2,0,1],dtype=np.uint8), 'dir':1},
                       }
         self.edges = {0 :{'ID':(1,1,0),  'oppIndex':5, 'faceIndex':(0,2), 'dir':(0,1)},
                       1 :{'ID':(1,-1,0), 'oppIndex':4, 'faceIndex':(0,3), 'dir':(0,1)},
@@ -83,37 +82,7 @@ class Orientation(object):
                           23:{'ID':[1,1,-1],  'index': 23 ,'oppIndex': 2},
                           24:{'ID':[1,1,0],   'index': 24 ,'oppIndex': 1},
                           25:{'ID':[1,1,1],   'index': 25 ,'oppIndex': 0},
-                           }
-        # self.directions ={0 :{'ID':[-1,-1,-1],'index': 0 ,'oppIndex':  13},
-        #                   1 :{'ID':[-1,-1, 1],'index': 1 ,'oppIndex':  12},
-        #                   2 :{'ID':[-1,-1, 0],'index': 2 ,'oppIndex':  14},
-        #                   3 :{'ID':[-1, 1,-1],'index': 3 ,'oppIndex':  10},
-        #                   4 :{'ID':[-1, 1, 1],'index': 4 ,'oppIndex':   9},
-        #                   5 :{'ID':[-1, 1, 0],'index': 5 ,'oppIndex':  11},
-        #                   6 :{'ID':[-1, 0,-1],'index': 6 ,'oppIndex':  16},
-        #                   7 :{'ID':[-1, 0, 1],'index': 7 ,'oppIndex':  15},
-        #                   8 :{'ID':[-1, 0, 0],'index': 8 ,'oppIndex':  17},
-        #                   9 :{'ID':[ 1,-1,-1],'index': 9 ,'oppIndex':   4},
-        #                   10:{'ID':[ 1,-1, 1],'index': 10 ,'oppIndex':  3},
-        #                   11:{'ID':[ 1,-1, 0],'index': 11 ,'oppIndex':  5},
-        #                   12:{'ID':[ 1, 1,-1],'index': 12 ,'oppIndex':  1},
-        #                   13:{'ID':[ 1, 1, 1],'index': 13 ,'oppIndex':  0},
-        #                   14:{'ID':[ 1, 1, 0],'index': 14 ,'oppIndex':  2},
-        #                   15:{'ID':[ 1, 0,-1],'index': 15 ,'oppIndex':  7},
-        #                   16:{'ID':[ 1, 0, 1],'index': 16 ,'oppIndex':  6},
-        #                   17:{'ID':[ 1, 0, 0],'index': 17 ,'oppIndex':  8},
-        #                   18:{'ID':[ 0,-1,-1],'index': 18 ,'oppIndex': 22},
-        #                   19:{'ID':[ 0,-1, 1],'index': 19 ,'oppIndex': 21},
-        #                   20:{'ID':[ 0,-1, 0],'index': 20 ,'oppIndex': 23},
-        #                   21:{'ID':[ 0, 1,-1],'index': 21 ,'oppIndex': 19},
-        #                   22:{'ID':[ 0, 1, 1],'index': 22 ,'oppIndex': 18},
-        #                   23:{'ID':[ 0, 1, 0],'index': 23 ,'oppIndex': 20},
-        #                   24:{'ID':[ 0, 0,-1],'index': 24 ,'oppIndex': 25},
-        #                   25:{'ID':[ 0, 0, 1],'index': 25 ,'oppIndex': 24},
-        #                   }
-
-
-
+                         }
 
     def getSendSlices(self,structRatio,buffer):
 
@@ -229,6 +198,7 @@ class Domain(object):
         self.subNodes[1],self.subNodesRem[1] = divmod(self.nodes[1],self.subDomains[1])
         self.subNodes[2],self.subNodesRem[2] = divmod(self.nodes[2],self.subDomains[2])
 
+
 class subDomain(object):
     def __init__(self,ID,subDomains,Domain,Orientation):
         bufferSize        = 1
@@ -239,7 +209,7 @@ class subDomain(object):
         self.Domain      = Domain
         self.Orientation = Orientation
         self.boundary    = False
-        self.boundaryID  = [0,0,0]
+        self.boundaryID  = np.zeros([3,2],dtype = np.int8)
         self.nodes       = np.zeros([3],dtype=np.int64)
         self.indexStart  = np.zeros([3],dtype=np.int64)
         self.subID       = np.zeros([3],dtype=np.int64)
@@ -273,24 +243,22 @@ class subDomain(object):
                     if n == self.ID:
                         if (i == 0):
                             self.boundary = True
-                            self.boundaryID[0] = -1
-                        elif (i == self.subDomains[0]-1):
+                            self.boundaryID[0][0] = -1
+                        if (i == self.subDomains[0]-1):
                             self.boundary = True
-                            self.boundaryID[0] = 1
-
+                            self.boundaryID[0][1] = 1
                         if (j == 0):
                             self.boundary = True
-                            self.boundaryID[1] = -1
-                        elif (j == self.subDomains[1]-1):
+                            self.boundaryID[1][0] = -1
+                        if (j == self.subDomains[1]-1):
                             self.boundary = True
-                            self.boundaryID[1] = 1
-
+                            self.boundaryID[1][1] = 1
                         if (k == 0):
                             self.boundary = True
-                            self.boundaryID[2] = -1
-                        elif(j == self.subDomains[2]-1):
+                            self.boundaryID[2][0] = -1
+                        if (k == self.subDomains[2]-1):
                             self.boundary = True
-                            self.boundaryID[2] = 1
+                            self.boundaryID[2][1] = 1
 
                         self.subID[0] = i
                         self.subID[1] = j
@@ -384,27 +352,29 @@ class subDomain(object):
     def getBoundaryInfo(self):
 
         rangeInfo = 2*np.ones([3,2],dtype=np.uint8)
-        if self.boundaryID[0] == -1 and not self.Domain.periodic[0]:
+        if self.boundaryID[0][0] == -1 and not self.Domain.periodic[0]:
             rangeInfo[0,0] = rangeInfo[0,0] - 1
-        if self.boundaryID[0] ==  1 and not self.Domain.periodic[0]:
+        if self.boundaryID[0][1] == 1 and not self.Domain.periodic[0]:
             rangeInfo[0,1] = rangeInfo[0,1] - 1
-        if self.boundaryID[1] == -1 and not self.Domain.periodic[1]:
+        if self.boundaryID[1][0] == -1 and not self.Domain.periodic[1]:
             rangeInfo[1,0] = rangeInfo[1,0] - 1
-        if self.boundaryID[1] ==  1 and not self.Domain.periodic[1]:
+        if self.boundaryID[1][1] == 1 and not self.Domain.periodic[1]:
             rangeInfo[1,1] = rangeInfo[1,1] - 1
-        if self.boundaryID[2] == -1 and not self.Domain.periodic[2]:
+        if self.boundaryID[2][0] == -1 and not self.Domain.periodic[2]:
             rangeInfo[2,0] = rangeInfo[2,0] - 1
-        if self.boundaryID[2] ==  1 and not self.Domain.periodic[2]:
+        if self.boundaryID[2][1] == 1 and not self.Domain.periodic[2]:
             rangeInfo[2,1] = rangeInfo[2,1] - 1
 
         for fIndex in self.Orientation.faces:
             face = self.Orientation.faces[fIndex]['argOrder'][0]
             fID = self.Orientation.faces[fIndex]['ID'][face]
-            if self.boundaryID[face] != 0:
+            fI = self.Orientation.faces[fIndex]['Index']
+
+            if self.boundaryID[face][fI] != 0:
                 self.globalBoundary[fIndex] = 1
-                if self.Domain.inlet[face] == fID and self.Domain.inlet[face] == self.boundaryID[face]:
+                if self.Domain.inlet[face] == fID and self.Domain.inlet[face] == self.boundaryID[face][fI]:
                     self.inlet[fIndex] = True
-                elif self.Domain.outlet[face] == fID and self.Domain.outlet[face] == self.boundaryID[face]:
+                elif self.Domain.outlet[face] == fID and self.Domain.outlet[face] == self.boundaryID[face][fI]:
                     self.outlet[fIndex] = True
 
             if self.Orientation.faces[fIndex]['dir'] == -1:
@@ -513,17 +483,17 @@ class subDomain(object):
 
     def getReservoir(self,resInd):
         self.res = np.zeros_like(self.grid)
-        if  self.boundaryID[0] > 0 and self.Domain.inlet[0] > 0:
+        if  self.boundaryID[0][0]  > 0 and self.Domain.inlet[0] > 0:
             self.res[-resInd:,:,:] = 1
-        elif self.boundaryID[0] < 0 and self.Domain.inlet[0] < 0:
+        elif self.boundaryID[0][1] < 0 and self.Domain.inlet[0] < 0:
             self.res[0:resInd,:,:] = 1
-        elif self.boundaryID[1] > 0 and self.Domain.inlet[1] > 0:
+        elif self.boundaryID[1][0] > 0 and self.Domain.inlet[1] > 0:
             self.res[:,-resInd:,:] = 1
-        elif self.boundaryID[1] < 0 and self.Domain.inlet[1] < 0:
+        elif self.boundaryID[1][1] < 0 and self.Domain.inlet[1] < 0:
             self.res[:,0:resInd,:] = 1
-        elif self.boundaryID[2] > 0 and self.Domain.inlet[2] > 0:
+        elif self.boundaryID[2][0] > 0 and self.Domain.inlet[2] > 0:
             self.res[:,:,-resInd:] = 1
-        elif self.boundaryID[2] < 0 and self.Domain.inlet[2] < 0:
+        elif self.boundaryID[2][1] < 0 and self.Domain.inlet[2] < 0:
             self.res[:,:,0:resInd] = 1
         print(self.Domain.inlet)
 

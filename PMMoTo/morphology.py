@@ -14,10 +14,10 @@ class Morphology(object):
         self.subDomain = subDomain
         self.Orientation = subDomain.Orientation
         self.structElem = None
+        self.radius = radius
         self.stuctRatio = np.zeros(3)
         self.grid = np.copy(grid)
         self.gridOut = np.copy(grid)
-        self.radius = radius
 
     def genStructElem(self):
 
@@ -112,8 +112,8 @@ class Morphology(object):
                     self.haloGrid[self.slices[cIndex,0],self.slices[cIndex,1],self.slices[cIndex,2]] = self.haloData[neigh]['NeighborProcID'][neigh]
 
     def morphAdd(self):
-        gridOutEDT = edt.edt3d(np.logical_not(self.haloGrid), anisotropy=(self.Domain.dX, self.Domain.dY, self.Domain.dZ))
-        gridOut = np.where( (gridOutEDT <= self.radius),1,0).astype(np.uint8)
+        self.gridOutEDT = edt.edt3d(np.logical_not(self.haloGrid), anisotropy=(self.Domain.dX, self.Domain.dY, self.Domain.dZ))
+        gridOut = np.where( (self.gridOutEDT <= self.radius),1,0).astype(np.uint8)
         dim = gridOut.shape
         self.gridOut = gridOut[self.halo[1]:dim[0]-self.halo[0],
                                self.halo[3]:dim[1]-self.halo[2],

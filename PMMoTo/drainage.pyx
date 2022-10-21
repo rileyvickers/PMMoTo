@@ -130,6 +130,7 @@ class Drainage(object):
         self.probeD = 0
         self.probeR = 0
         self.pC = 0
+        self.numNWP = 0
         self.ind = None
         self.nwp = None
         self.globalIndexStart = 0
@@ -156,11 +157,12 @@ class Drainage(object):
         self.ind = np.where( (self.edt.EDT >= self.probeR) & (self.subDomain.grid == 1),1,0).astype(np.uint8)
         self.numNWP = np.sum(self.ind)
 
+
     @cython.boundscheck(False)  # Deactivate bounds checking
     @cython.wraparound(False)   # Deactivate negative indexing.
     def getNodeInfo(self):
         """
-        Speed up Code with avoiding Node Class and Only Use NumPY Arrays
+        Speed up Code with avoiding Node Class and Only Use NumPy Arrays
         NodeInfoBin Array is [boundary,inlet,outlet,boundaryID,availDirection,lastDirection,visited]
         NodeInfoIndex Array is [i,j,k,globalIndex]
         NodeDir Array is [directions[26],nodeDirections[26]]
@@ -749,7 +751,6 @@ def calcDrainage(rank,size,pc,domain,subDomain,inlet,EDT,info = False):
             drain.probeDistance()
             numNWPSum = np.zeros(1,dtype=np.uint64)
             comm.Allreduce( [drain.numNWP, MPI.INT], [numNWPSum, MPI.INT], op = MPI.SUM )
-
             if numNWPSum < 1:
                 drain.nwp = np.copy(subDomain.grid)
                 drain.nwpFinal = drain.nwp
@@ -775,4 +776,4 @@ def calcDrainage(rank,size,pc,domain,subDomain,inlet,EDT,info = False):
             sW = 1.-drain.totalnwpNodes[0]/subDomain.totalPoreNodes[0]
             print("Wetting phase saturation is: %e at pC of %e" %(sW,p))
 
-    return drain
+    return drain,morphL
