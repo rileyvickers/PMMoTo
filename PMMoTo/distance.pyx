@@ -1,16 +1,12 @@
-
 import math
 import numpy as np
 cimport numpy as cnp
 from libc.stdio cimport printf
 cnp.import_array()
-
 from mpi4py import MPI
 from pykdtree.kdtree import KDTree
 import edt
 from . import communication
-from _distance import _fixInterfaceCalc
-from _distance import _getBoundarySolids
 
 comm = MPI.COMM_WORLD
 
