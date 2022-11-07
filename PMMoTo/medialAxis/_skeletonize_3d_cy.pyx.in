@@ -83,7 +83,7 @@ def _compute_thin_image(pixel_type[:, :, ::1] img not None):
         pixel_type neighb[27]
 
     # loop over the six directions in this order (for consistency with ImageJ)
-    borders[:] = [4, 3, 2, 1, 5, 6]
+    borders[:] = [4,3,2,1,5,6]
 
     with nogil:
         # no need to worry about the z direction if the original image is 2D.
@@ -98,9 +98,11 @@ def _compute_thin_image(pixel_type[:, :, ::1] img not None):
             unchanged_borders = 0
             for j in range(num_borders):
                 curr_border = borders[j]
-
-                find_simple_point_candidates(img, curr_border, simple_border_points)
+                simple_border_points.clear();
                 find_simple_point_candidates_boundary(img, curr_border, simple_border_points)
+                find_simple_point_candidates(img, curr_border, simple_border_points)
+
+                #find_simple_point_candidates_boundary(img, curr_border, simple_border_points)
                 # sequential re-checking to preserve connectivity when deleting
                 # in a parallel way
                 no_change = True
@@ -152,7 +154,7 @@ cdef void find_simple_point_candidates(pixel_type[:, :, ::1] img,
         int[::1] Euler_LUT = LUT
 
     # clear the output vector
-    simple_border_points.clear();
+    #simple_border_points.clear();
 
     # loop through the image
     # NB: each loop is from 1 to size-1: img is padded from all sides
@@ -326,6 +328,15 @@ cdef inline bint is_endpoint(pixel_type neighbors[]) nogil:
     for j in range(27):
         s += neighbors[j]
     return s == 2
+
+cdef inline int is_endpoint_check(pixel_type neighbors[]) nogil:
+    """An endpoint has exactly one neighbor in the 26-neighborhood.
+    """
+    # The center pixel is counted, thus r.h.s. is 2
+    cdef int s = 0, j
+    for j in range(27):
+        s += neighbors[j]
+    return s
 
 
 cdef bint is_simple_point(pixel_type neighbors[]) nogil:
@@ -595,7 +606,7 @@ _neighb_idx = [[0, 9, 3, 12, 1, 10, 4],       #0
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef bint is_Euler_invariant_Octant_{{_octant}}(pixel_type neighbors[],
+cdef int is_Euler_invariant_Octant_{{_octant}}(pixel_type neighbors[],
                              int[::1] lut) nogil:
 
     cdef int n, euler_char = 0
@@ -697,18 +708,19 @@ for ind in range(0,3):
                 continue
 
             get_neighborhood_boundary_{{objectNames[numObj]}}_{{n}}(img, p, r, c, neighborhood)
-            if (is_endpoint(neighborhood)):
+            if (not is_endpoint(neighborhood)):
                 euler_char = 0
                 {{for nOct in obj[n]['Octant']}}
                 euler_char = euler_char + is_Euler_invariant_Octant_{{nOct}}(neighborhood, Euler_LUT)
                 {{endfor}}
                 if not euler_char==0 or not is_simple_point(neighborhood):
                     continue
-            point.p = p
-            point.r = r
-            point.c = c
-            point.ID = {{10+n}}
-            simple_border_points.push_back(point)
+
+                point.p = p
+                point.r = r
+                point.c = c
+                point.ID = {{10+n}}
+                simple_border_points.push_back(point)
 
 {{elif numInd == 2}}
 
@@ -746,18 +758,19 @@ for ind in range(0,3):
             continue
 
         get_neighborhood_boundary_{{objectNames[numObj]}}_{{n}}(img, p, r, c, neighborhood)
-        if (is_endpoint(neighborhood)):
+        if (not is_endpoint(neighborhood)):
             euler_char = 0
             {{for nOct in obj[n]['Octant']}}
             euler_char = euler_char + is_Euler_invariant_Octant_{{nOct}}(neighborhood, Euler_LUT)
             {{endfor}}
-            if not euler_char==0 or not is_simple_point(neighborhood):
+            if not euler_char == 0 or not is_simple_point(neighborhood):
                 continue
-        point.p = p
-        point.r = r
-        point.c = c
-        point.ID = {{20+n}}
-        simple_border_points.push_back(point)
+
+            point.p = p
+            point.r = r
+            point.c = c
+            point.ID = {{20+n}}
+            simple_border_points.push_back(point)
 
 {{elif numInd == 3}}
 
@@ -793,7 +806,7 @@ for ind in range(0,3):
         if is_border_pt:
 
             get_neighborhood_boundary_{{objectNames[numObj]}}_{{n}}(img, p, r, c, neighborhood)
-            if (is_endpoint(neighborhood)):
+            if (not is_endpoint(neighborhood)):
                 euler_char = 0
                 {{for nOct in obj[n]['Octant']}}
                 euler_char = euler_char + is_Euler_invariant_Octant_{{nOct}}(neighborhood, Euler_LUT)

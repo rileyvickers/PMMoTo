@@ -734,12 +734,10 @@ class Drainage(object):
 
 def calcDrainage(rank,size,pc,domain,subDomain,inlet,EDT,info = False):
 
-
     for p in pc:
         if p == 0:
             sW = 1
         else:
-
             drain = Drainage(Domain = domain, Orientation = subDomain.Orientation, subDomain = subDomain, edt = EDT, gamma = 1., inlet = inlet)
             if info:
                 drain.getpC(EDT.maxD)
