@@ -102,7 +102,6 @@ def _compute_thin_image(pixel_type[:, :, ::1] img not None):
                 find_simple_point_candidates_boundary(img, curr_border, simple_border_points)
                 find_simple_point_candidates(img, curr_border, simple_border_points)
 
-                #find_simple_point_candidates_boundary(img, curr_border, simple_border_points)
                 # sequential re-checking to preserve connectivity when deleting
                 # in a parallel way
                 no_change = True

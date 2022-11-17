@@ -495,7 +495,6 @@ class subDomain(object):
             self.res[:,:,-resInd:] = 1
         elif self.boundaryID[2][1] < 0 and self.Domain.inlet[2] < 0:
             self.res[:,:,0:resInd] = 1
-        print(self.Domain.inlet)
 
 
 

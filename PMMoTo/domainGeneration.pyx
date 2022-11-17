@@ -66,23 +66,3 @@ def domainGenINK(double[:] x, double[:] y, double[:] z):
             grid[i,j,k] = 1
 
     return _grid
-
-
-
-def printMedialAxis( double[:] x, double[:] y, double[:] z, long[:,:,:] medialAxis, double [:,:,:] distance):
-
-    cdef int NX = x.shape[0]
-    cdef int NY = y.shape[0]
-    cdef int NZ = z.shape[0]
-
-    fileName = "medialAxisOut.txt"
-
-    file = open(fileName, "w")
-
-    cdef int i, j, k
-
-    for k in range(0,NZ):
-      for j in range(0,NY):
-        for i in range(0,NX):
-          if medialAxis[k,j,i]:
-            file.write("%e,%e,%e,%e\n" % (x[i],y[j],z[k],distance[k,j,i]) )

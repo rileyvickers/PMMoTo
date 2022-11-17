@@ -83,7 +83,7 @@ def _compute_thin_image(pixel_type[:, :, ::1] img not None):
         pixel_type neighb[27]
 
     # loop over the six directions in this order (for consistency with ImageJ)
-    borders[:] = [4, 3, 2, 1, 5, 6]
+    borders[:] = [4,3,2,1,5,6]
 
     with nogil:
         # no need to worry about the z direction if the original image is 2D.
@@ -98,9 +98,11 @@ def _compute_thin_image(pixel_type[:, :, ::1] img not None):
             unchanged_borders = 0
             for j in range(num_borders):
                 curr_border = borders[j]
-
-                find_simple_point_candidates(img, curr_border, simple_border_points)
+                simple_border_points.clear();
                 find_simple_point_candidates_boundary(img, curr_border, simple_border_points)
+                find_simple_point_candidates(img, curr_border, simple_border_points)
+
+                #find_simple_point_candidates_boundary(img, curr_border, simple_border_points)
                 # sequential re-checking to preserve connectivity when deleting
                 # in a parallel way
                 no_change = True
@@ -152,7 +154,7 @@ cdef void find_simple_point_candidates(pixel_type[:, :, ::1] img,
         int[::1] Euler_LUT = LUT
 
     # clear the output vector
-    simple_border_points.clear();
+    #simple_border_points.clear();
 
     # loop through the image
     # NB: each loop is from 1 to size-1: img is padded from all sides
@@ -503,6 +505,15 @@ cdef inline bint is_endpoint(pixel_type neighbors[]) nogil:
     for j in range(27):
         s += neighbors[j]
     return s == 2
+
+cdef inline int is_endpoint_check(pixel_type neighbors[]) nogil:
+    """An endpoint has exactly one neighbor in the 26-neighborhood.
+    """
+    # The center pixel is counted, thus r.h.s. is 2
+    cdef int s = 0, j
+    for j in range(27):
+        s += neighbors[j]
+    return s
 
 
 cdef bint is_simple_point(pixel_type neighbors[]) nogil:
@@ -1682,7 +1693,7 @@ cdef void get_neighborhood_boundary_corners_7(pixel_type[:, :, ::1] img,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef bint is_Euler_invariant_Octant_0(pixel_type neighbors[],
+cdef int is_Euler_invariant_Octant_0(pixel_type neighbors[],
                              int[::1] lut) nogil:
 
     cdef int n, euler_char = 0
@@ -1714,7 +1725,7 @@ cdef bint is_Euler_invariant_Octant_0(pixel_type neighbors[],
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef bint is_Euler_invariant_Octant_1(pixel_type neighbors[],
+cdef int is_Euler_invariant_Octant_1(pixel_type neighbors[],
                              int[::1] lut) nogil:
 
     cdef int n, euler_char = 0
@@ -1746,7 +1757,7 @@ cdef bint is_Euler_invariant_Octant_1(pixel_type neighbors[],
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef bint is_Euler_invariant_Octant_2(pixel_type neighbors[],
+cdef int is_Euler_invariant_Octant_2(pixel_type neighbors[],
                              int[::1] lut) nogil:
 
     cdef int n, euler_char = 0
@@ -1778,7 +1789,7 @@ cdef bint is_Euler_invariant_Octant_2(pixel_type neighbors[],
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef bint is_Euler_invariant_Octant_3(pixel_type neighbors[],
+cdef int is_Euler_invariant_Octant_3(pixel_type neighbors[],
                              int[::1] lut) nogil:
 
     cdef int n, euler_char = 0
@@ -1810,7 +1821,7 @@ cdef bint is_Euler_invariant_Octant_3(pixel_type neighbors[],
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef bint is_Euler_invariant_Octant_4(pixel_type neighbors[],
+cdef int is_Euler_invariant_Octant_4(pixel_type neighbors[],
                              int[::1] lut) nogil:
 
     cdef int n, euler_char = 0
@@ -1842,7 +1853,7 @@ cdef bint is_Euler_invariant_Octant_4(pixel_type neighbors[],
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef bint is_Euler_invariant_Octant_5(pixel_type neighbors[],
+cdef int is_Euler_invariant_Octant_5(pixel_type neighbors[],
                              int[::1] lut) nogil:
 
     cdef int n, euler_char = 0
@@ -1874,7 +1885,7 @@ cdef bint is_Euler_invariant_Octant_5(pixel_type neighbors[],
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef bint is_Euler_invariant_Octant_6(pixel_type neighbors[],
+cdef int is_Euler_invariant_Octant_6(pixel_type neighbors[],
                              int[::1] lut) nogil:
 
     cdef int n, euler_char = 0
@@ -1906,7 +1917,7 @@ cdef bint is_Euler_invariant_Octant_6(pixel_type neighbors[],
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef bint is_Euler_invariant_Octant_7(pixel_type neighbors[],
+cdef int is_Euler_invariant_Octant_7(pixel_type neighbors[],
                              int[::1] lut) nogil:
 
     cdef int n, euler_char = 0
@@ -1974,7 +1985,7 @@ cdef void find_simple_point_candidates_faces_0(pixel_type[:, :, ::1] img,
                 continue
 
             get_neighborhood_boundary_faces_0(img, p, r, c, neighborhood)
-            if (is_endpoint(neighborhood)):
+            if (not is_endpoint(neighborhood)):
                 euler_char = 0
                 euler_char = euler_char + is_Euler_invariant_Octant_0(neighborhood, Euler_LUT)
                 euler_char = euler_char + is_Euler_invariant_Octant_1(neighborhood, Euler_LUT)
@@ -1982,11 +1993,12 @@ cdef void find_simple_point_candidates_faces_0(pixel_type[:, :, ::1] img,
                 euler_char = euler_char + is_Euler_invariant_Octant_3(neighborhood, Euler_LUT)
                 if not euler_char==0 or not is_simple_point(neighborhood):
                     continue
-            point.p = p
-            point.r = r
-            point.c = c
-            point.ID = 10
-            simple_border_points.push_back(point)
+
+                point.p = p
+                point.r = r
+                point.c = c
+                point.ID = 10
+                simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -2026,7 +2038,7 @@ cdef void find_simple_point_candidates_faces_1(pixel_type[:, :, ::1] img,
                 continue
 
             get_neighborhood_boundary_faces_1(img, p, r, c, neighborhood)
-            if (is_endpoint(neighborhood)):
+            if (not is_endpoint(neighborhood)):
                 euler_char = 0
                 euler_char = euler_char + is_Euler_invariant_Octant_4(neighborhood, Euler_LUT)
                 euler_char = euler_char + is_Euler_invariant_Octant_5(neighborhood, Euler_LUT)
@@ -2034,11 +2046,12 @@ cdef void find_simple_point_candidates_faces_1(pixel_type[:, :, ::1] img,
                 euler_char = euler_char + is_Euler_invariant_Octant_7(neighborhood, Euler_LUT)
                 if not euler_char==0 or not is_simple_point(neighborhood):
                     continue
-            point.p = p
-            point.r = r
-            point.c = c
-            point.ID = 11
-            simple_border_points.push_back(point)
+
+                point.p = p
+                point.r = r
+                point.c = c
+                point.ID = 11
+                simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -2078,7 +2091,7 @@ cdef void find_simple_point_candidates_faces_2(pixel_type[:, :, ::1] img,
                 continue
 
             get_neighborhood_boundary_faces_2(img, p, r, c, neighborhood)
-            if (is_endpoint(neighborhood)):
+            if (not is_endpoint(neighborhood)):
                 euler_char = 0
                 euler_char = euler_char + is_Euler_invariant_Octant_0(neighborhood, Euler_LUT)
                 euler_char = euler_char + is_Euler_invariant_Octant_2(neighborhood, Euler_LUT)
@@ -2086,11 +2099,12 @@ cdef void find_simple_point_candidates_faces_2(pixel_type[:, :, ::1] img,
                 euler_char = euler_char + is_Euler_invariant_Octant_6(neighborhood, Euler_LUT)
                 if not euler_char==0 or not is_simple_point(neighborhood):
                     continue
-            point.p = p
-            point.r = r
-            point.c = c
-            point.ID = 12
-            simple_border_points.push_back(point)
+
+                point.p = p
+                point.r = r
+                point.c = c
+                point.ID = 12
+                simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -2130,7 +2144,7 @@ cdef void find_simple_point_candidates_faces_3(pixel_type[:, :, ::1] img,
                 continue
 
             get_neighborhood_boundary_faces_3(img, p, r, c, neighborhood)
-            if (is_endpoint(neighborhood)):
+            if (not is_endpoint(neighborhood)):
                 euler_char = 0
                 euler_char = euler_char + is_Euler_invariant_Octant_1(neighborhood, Euler_LUT)
                 euler_char = euler_char + is_Euler_invariant_Octant_3(neighborhood, Euler_LUT)
@@ -2138,11 +2152,12 @@ cdef void find_simple_point_candidates_faces_3(pixel_type[:, :, ::1] img,
                 euler_char = euler_char + is_Euler_invariant_Octant_7(neighborhood, Euler_LUT)
                 if not euler_char==0 or not is_simple_point(neighborhood):
                     continue
-            point.p = p
-            point.r = r
-            point.c = c
-            point.ID = 13
-            simple_border_points.push_back(point)
+
+                point.p = p
+                point.r = r
+                point.c = c
+                point.ID = 13
+                simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -2182,7 +2197,7 @@ cdef void find_simple_point_candidates_faces_4(pixel_type[:, :, ::1] img,
                 continue
 
             get_neighborhood_boundary_faces_4(img, p, r, c, neighborhood)
-            if (is_endpoint(neighborhood)):
+            if (not is_endpoint(neighborhood)):
                 euler_char = 0
                 euler_char = euler_char + is_Euler_invariant_Octant_0(neighborhood, Euler_LUT)
                 euler_char = euler_char + is_Euler_invariant_Octant_1(neighborhood, Euler_LUT)
@@ -2190,11 +2205,12 @@ cdef void find_simple_point_candidates_faces_4(pixel_type[:, :, ::1] img,
                 euler_char = euler_char + is_Euler_invariant_Octant_5(neighborhood, Euler_LUT)
                 if not euler_char==0 or not is_simple_point(neighborhood):
                     continue
-            point.p = p
-            point.r = r
-            point.c = c
-            point.ID = 14
-            simple_border_points.push_back(point)
+
+                point.p = p
+                point.r = r
+                point.c = c
+                point.ID = 14
+                simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -2234,7 +2250,7 @@ cdef void find_simple_point_candidates_faces_5(pixel_type[:, :, ::1] img,
                 continue
 
             get_neighborhood_boundary_faces_5(img, p, r, c, neighborhood)
-            if (is_endpoint(neighborhood)):
+            if (not is_endpoint(neighborhood)):
                 euler_char = 0
                 euler_char = euler_char + is_Euler_invariant_Octant_2(neighborhood, Euler_LUT)
                 euler_char = euler_char + is_Euler_invariant_Octant_3(neighborhood, Euler_LUT)
@@ -2242,11 +2258,12 @@ cdef void find_simple_point_candidates_faces_5(pixel_type[:, :, ::1] img,
                 euler_char = euler_char + is_Euler_invariant_Octant_7(neighborhood, Euler_LUT)
                 if not euler_char==0 or not is_simple_point(neighborhood):
                     continue
-            point.p = p
-            point.r = r
-            point.c = c
-            point.ID = 15
-            simple_border_points.push_back(point)
+
+                point.p = p
+                point.r = r
+                point.c = c
+                point.ID = 15
+                simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -2285,17 +2302,18 @@ cdef void find_simple_point_candidates_edges_0(pixel_type[:, :, ::1] img,
             continue
 
         get_neighborhood_boundary_edges_0(img, p, r, c, neighborhood)
-        if (is_endpoint(neighborhood)):
+        if (not is_endpoint(neighborhood)):
             euler_char = 0
             euler_char = euler_char + is_Euler_invariant_Octant_0(neighborhood, Euler_LUT)
             euler_char = euler_char + is_Euler_invariant_Octant_2(neighborhood, Euler_LUT)
-            if not euler_char==0 or not is_simple_point(neighborhood):
+            if not euler_char == 0 or not is_simple_point(neighborhood):
                 continue
-        point.p = p
-        point.r = r
-        point.c = c
-        point.ID = 20
-        simple_border_points.push_back(point)
+
+            point.p = p
+            point.r = r
+            point.c = c
+            point.ID = 20
+            simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -2334,17 +2352,18 @@ cdef void find_simple_point_candidates_edges_1(pixel_type[:, :, ::1] img,
             continue
 
         get_neighborhood_boundary_edges_1(img, p, r, c, neighborhood)
-        if (is_endpoint(neighborhood)):
+        if (not is_endpoint(neighborhood)):
             euler_char = 0
             euler_char = euler_char + is_Euler_invariant_Octant_1(neighborhood, Euler_LUT)
             euler_char = euler_char + is_Euler_invariant_Octant_3(neighborhood, Euler_LUT)
-            if not euler_char==0 or not is_simple_point(neighborhood):
+            if not euler_char == 0 or not is_simple_point(neighborhood):
                 continue
-        point.p = p
-        point.r = r
-        point.c = c
-        point.ID = 21
-        simple_border_points.push_back(point)
+
+            point.p = p
+            point.r = r
+            point.c = c
+            point.ID = 21
+            simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -2383,17 +2402,18 @@ cdef void find_simple_point_candidates_edges_2(pixel_type[:, :, ::1] img,
             continue
 
         get_neighborhood_boundary_edges_2(img, p, r, c, neighborhood)
-        if (is_endpoint(neighborhood)):
+        if (not is_endpoint(neighborhood)):
             euler_char = 0
             euler_char = euler_char + is_Euler_invariant_Octant_0(neighborhood, Euler_LUT)
             euler_char = euler_char + is_Euler_invariant_Octant_1(neighborhood, Euler_LUT)
-            if not euler_char==0 or not is_simple_point(neighborhood):
+            if not euler_char == 0 or not is_simple_point(neighborhood):
                 continue
-        point.p = p
-        point.r = r
-        point.c = c
-        point.ID = 22
-        simple_border_points.push_back(point)
+
+            point.p = p
+            point.r = r
+            point.c = c
+            point.ID = 22
+            simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -2432,17 +2452,18 @@ cdef void find_simple_point_candidates_edges_3(pixel_type[:, :, ::1] img,
             continue
 
         get_neighborhood_boundary_edges_3(img, p, r, c, neighborhood)
-        if (is_endpoint(neighborhood)):
+        if (not is_endpoint(neighborhood)):
             euler_char = 0
             euler_char = euler_char + is_Euler_invariant_Octant_2(neighborhood, Euler_LUT)
             euler_char = euler_char + is_Euler_invariant_Octant_3(neighborhood, Euler_LUT)
-            if not euler_char==0 or not is_simple_point(neighborhood):
+            if not euler_char == 0 or not is_simple_point(neighborhood):
                 continue
-        point.p = p
-        point.r = r
-        point.c = c
-        point.ID = 23
-        simple_border_points.push_back(point)
+
+            point.p = p
+            point.r = r
+            point.c = c
+            point.ID = 23
+            simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -2481,17 +2502,18 @@ cdef void find_simple_point_candidates_edges_4(pixel_type[:, :, ::1] img,
             continue
 
         get_neighborhood_boundary_edges_4(img, p, r, c, neighborhood)
-        if (is_endpoint(neighborhood)):
+        if (not is_endpoint(neighborhood)):
             euler_char = 0
             euler_char = euler_char + is_Euler_invariant_Octant_0(neighborhood, Euler_LUT)
             euler_char = euler_char + is_Euler_invariant_Octant_4(neighborhood, Euler_LUT)
-            if not euler_char==0 or not is_simple_point(neighborhood):
+            if not euler_char == 0 or not is_simple_point(neighborhood):
                 continue
-        point.p = p
-        point.r = r
-        point.c = c
-        point.ID = 24
-        simple_border_points.push_back(point)
+
+            point.p = p
+            point.r = r
+            point.c = c
+            point.ID = 24
+            simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -2530,17 +2552,18 @@ cdef void find_simple_point_candidates_edges_5(pixel_type[:, :, ::1] img,
             continue
 
         get_neighborhood_boundary_edges_5(img, p, r, c, neighborhood)
-        if (is_endpoint(neighborhood)):
+        if (not is_endpoint(neighborhood)):
             euler_char = 0
             euler_char = euler_char + is_Euler_invariant_Octant_3(neighborhood, Euler_LUT)
             euler_char = euler_char + is_Euler_invariant_Octant_7(neighborhood, Euler_LUT)
-            if not euler_char==0 or not is_simple_point(neighborhood):
+            if not euler_char == 0 or not is_simple_point(neighborhood):
                 continue
-        point.p = p
-        point.r = r
-        point.c = c
-        point.ID = 25
-        simple_border_points.push_back(point)
+
+            point.p = p
+            point.r = r
+            point.c = c
+            point.ID = 25
+            simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -2579,17 +2602,18 @@ cdef void find_simple_point_candidates_edges_6(pixel_type[:, :, ::1] img,
             continue
 
         get_neighborhood_boundary_edges_6(img, p, r, c, neighborhood)
-        if (is_endpoint(neighborhood)):
+        if (not is_endpoint(neighborhood)):
             euler_char = 0
             euler_char = euler_char + is_Euler_invariant_Octant_2(neighborhood, Euler_LUT)
             euler_char = euler_char + is_Euler_invariant_Octant_6(neighborhood, Euler_LUT)
-            if not euler_char==0 or not is_simple_point(neighborhood):
+            if not euler_char == 0 or not is_simple_point(neighborhood):
                 continue
-        point.p = p
-        point.r = r
-        point.c = c
-        point.ID = 26
-        simple_border_points.push_back(point)
+
+            point.p = p
+            point.r = r
+            point.c = c
+            point.ID = 26
+            simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -2628,17 +2652,18 @@ cdef void find_simple_point_candidates_edges_7(pixel_type[:, :, ::1] img,
             continue
 
         get_neighborhood_boundary_edges_7(img, p, r, c, neighborhood)
-        if (is_endpoint(neighborhood)):
+        if (not is_endpoint(neighborhood)):
             euler_char = 0
             euler_char = euler_char + is_Euler_invariant_Octant_1(neighborhood, Euler_LUT)
             euler_char = euler_char + is_Euler_invariant_Octant_5(neighborhood, Euler_LUT)
-            if not euler_char==0 or not is_simple_point(neighborhood):
+            if not euler_char == 0 or not is_simple_point(neighborhood):
                 continue
-        point.p = p
-        point.r = r
-        point.c = c
-        point.ID = 27
-        simple_border_points.push_back(point)
+
+            point.p = p
+            point.r = r
+            point.c = c
+            point.ID = 27
+            simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -2677,17 +2702,18 @@ cdef void find_simple_point_candidates_edges_8(pixel_type[:, :, ::1] img,
             continue
 
         get_neighborhood_boundary_edges_8(img, p, r, c, neighborhood)
-        if (is_endpoint(neighborhood)):
+        if (not is_endpoint(neighborhood)):
             euler_char = 0
             euler_char = euler_char + is_Euler_invariant_Octant_4(neighborhood, Euler_LUT)
             euler_char = euler_char + is_Euler_invariant_Octant_6(neighborhood, Euler_LUT)
-            if not euler_char==0 or not is_simple_point(neighborhood):
+            if not euler_char == 0 or not is_simple_point(neighborhood):
                 continue
-        point.p = p
-        point.r = r
-        point.c = c
-        point.ID = 28
-        simple_border_points.push_back(point)
+
+            point.p = p
+            point.r = r
+            point.c = c
+            point.ID = 28
+            simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -2726,17 +2752,18 @@ cdef void find_simple_point_candidates_edges_9(pixel_type[:, :, ::1] img,
             continue
 
         get_neighborhood_boundary_edges_9(img, p, r, c, neighborhood)
-        if (is_endpoint(neighborhood)):
+        if (not is_endpoint(neighborhood)):
             euler_char = 0
             euler_char = euler_char + is_Euler_invariant_Octant_5(neighborhood, Euler_LUT)
             euler_char = euler_char + is_Euler_invariant_Octant_7(neighborhood, Euler_LUT)
-            if not euler_char==0 or not is_simple_point(neighborhood):
+            if not euler_char == 0 or not is_simple_point(neighborhood):
                 continue
-        point.p = p
-        point.r = r
-        point.c = c
-        point.ID = 29
-        simple_border_points.push_back(point)
+
+            point.p = p
+            point.r = r
+            point.c = c
+            point.ID = 29
+            simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -2775,17 +2802,18 @@ cdef void find_simple_point_candidates_edges_10(pixel_type[:, :, ::1] img,
             continue
 
         get_neighborhood_boundary_edges_10(img, p, r, c, neighborhood)
-        if (is_endpoint(neighborhood)):
+        if (not is_endpoint(neighborhood)):
             euler_char = 0
             euler_char = euler_char + is_Euler_invariant_Octant_4(neighborhood, Euler_LUT)
             euler_char = euler_char + is_Euler_invariant_Octant_5(neighborhood, Euler_LUT)
-            if not euler_char==0 or not is_simple_point(neighborhood):
+            if not euler_char == 0 or not is_simple_point(neighborhood):
                 continue
-        point.p = p
-        point.r = r
-        point.c = c
-        point.ID = 30
-        simple_border_points.push_back(point)
+
+            point.p = p
+            point.r = r
+            point.c = c
+            point.ID = 30
+            simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -2824,17 +2852,18 @@ cdef void find_simple_point_candidates_edges_11(pixel_type[:, :, ::1] img,
             continue
 
         get_neighborhood_boundary_edges_11(img, p, r, c, neighborhood)
-        if (is_endpoint(neighborhood)):
+        if (not is_endpoint(neighborhood)):
             euler_char = 0
             euler_char = euler_char + is_Euler_invariant_Octant_6(neighborhood, Euler_LUT)
             euler_char = euler_char + is_Euler_invariant_Octant_7(neighborhood, Euler_LUT)
-            if not euler_char==0 or not is_simple_point(neighborhood):
+            if not euler_char == 0 or not is_simple_point(neighborhood):
                 continue
-        point.p = p
-        point.r = r
-        point.c = c
-        point.ID = 31
-        simple_border_points.push_back(point)
+
+            point.p = p
+            point.r = r
+            point.c = c
+            point.ID = 31
+            simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -2870,7 +2899,7 @@ cdef void find_simple_point_candidates_corners_0(pixel_type[:, :, ::1] img,
         if is_border_pt:
 
             get_neighborhood_boundary_corners_0(img, p, r, c, neighborhood)
-            if (is_endpoint(neighborhood)):
+            if (not is_endpoint(neighborhood)):
                 euler_char = 0
                 euler_char = euler_char + is_Euler_invariant_Octant_0(neighborhood, Euler_LUT)
                 if euler_char==0 or is_simple_point(neighborhood):
@@ -2915,7 +2944,7 @@ cdef void find_simple_point_candidates_corners_1(pixel_type[:, :, ::1] img,
         if is_border_pt:
 
             get_neighborhood_boundary_corners_1(img, p, r, c, neighborhood)
-            if (is_endpoint(neighborhood)):
+            if (not is_endpoint(neighborhood)):
                 euler_char = 0
                 euler_char = euler_char + is_Euler_invariant_Octant_1(neighborhood, Euler_LUT)
                 if euler_char==0 or is_simple_point(neighborhood):
@@ -2960,7 +2989,7 @@ cdef void find_simple_point_candidates_corners_2(pixel_type[:, :, ::1] img,
         if is_border_pt:
 
             get_neighborhood_boundary_corners_2(img, p, r, c, neighborhood)
-            if (is_endpoint(neighborhood)):
+            if (not is_endpoint(neighborhood)):
                 euler_char = 0
                 euler_char = euler_char + is_Euler_invariant_Octant_2(neighborhood, Euler_LUT)
                 if euler_char==0 or is_simple_point(neighborhood):
@@ -3005,7 +3034,7 @@ cdef void find_simple_point_candidates_corners_3(pixel_type[:, :, ::1] img,
         if is_border_pt:
 
             get_neighborhood_boundary_corners_3(img, p, r, c, neighborhood)
-            if (is_endpoint(neighborhood)):
+            if (not is_endpoint(neighborhood)):
                 euler_char = 0
                 euler_char = euler_char + is_Euler_invariant_Octant_3(neighborhood, Euler_LUT)
                 if euler_char==0 or is_simple_point(neighborhood):
@@ -3050,7 +3079,7 @@ cdef void find_simple_point_candidates_corners_4(pixel_type[:, :, ::1] img,
         if is_border_pt:
 
             get_neighborhood_boundary_corners_4(img, p, r, c, neighborhood)
-            if (is_endpoint(neighborhood)):
+            if (not is_endpoint(neighborhood)):
                 euler_char = 0
                 euler_char = euler_char + is_Euler_invariant_Octant_4(neighborhood, Euler_LUT)
                 if euler_char==0 or is_simple_point(neighborhood):
@@ -3095,7 +3124,7 @@ cdef void find_simple_point_candidates_corners_5(pixel_type[:, :, ::1] img,
         if is_border_pt:
 
             get_neighborhood_boundary_corners_5(img, p, r, c, neighborhood)
-            if (is_endpoint(neighborhood)):
+            if (not is_endpoint(neighborhood)):
                 euler_char = 0
                 euler_char = euler_char + is_Euler_invariant_Octant_5(neighborhood, Euler_LUT)
                 if euler_char==0 or is_simple_point(neighborhood):
@@ -3140,7 +3169,7 @@ cdef void find_simple_point_candidates_corners_6(pixel_type[:, :, ::1] img,
         if is_border_pt:
 
             get_neighborhood_boundary_corners_6(img, p, r, c, neighborhood)
-            if (is_endpoint(neighborhood)):
+            if (not is_endpoint(neighborhood)):
                 euler_char = 0
                 euler_char = euler_char + is_Euler_invariant_Octant_6(neighborhood, Euler_LUT)
                 if euler_char==0 or is_simple_point(neighborhood):
@@ -3185,7 +3214,7 @@ cdef void find_simple_point_candidates_corners_7(pixel_type[:, :, ::1] img,
         if is_border_pt:
 
             get_neighborhood_boundary_corners_7(img, p, r, c, neighborhood)
-            if (is_endpoint(neighborhood)):
+            if (not is_endpoint(neighborhood)):
                 euler_char = 0
                 euler_char = euler_char + is_Euler_invariant_Octant_7(neighborhood, Euler_LUT)
                 if euler_char==0 or is_simple_point(neighborhood):
