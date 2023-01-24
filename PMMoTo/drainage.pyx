@@ -104,7 +104,7 @@ class Set(object):
 
 
 class Node(object):
-    def __init__(self, ID = 0, localIndex =np.zeros(3,dtype=np.int64), globalIndex = 0, boundary = False, boundaryID = -1, inlet = False, outlet = False ):
+    def __init__(self, ID = 0, localIndex = np.zeros(3,dtype=np.int64), globalIndex = 0, boundary = False, boundaryID = -1, inlet = False, outlet = False ):
         self.ID  = ID
         self.boundary = boundary
         self.inlet  = inlet
@@ -396,6 +396,7 @@ class Drainage(object):
         cdef cnp.uint64_t [:,:] nodeInfoDirNode
         nodeInfoDirNode = self.nodeInfoDirNode
 
+### DELETE THIS LINE?
         cdef cnp.int64_t [:,:,:] nodeTable
         nodeTable = self.nodeTable
 
@@ -437,7 +438,7 @@ class Drainage(object):
                             if currentNode[4] > 0:
                                 d = currentNode[5]
                                 found = 0
-                                while d > 0  and not found:
+                                while d >= 0  and not found:
                                   if nodeInfoDir[ID,d] == 1:
                                     found = 1
                                     oppDir = directions[d][4]
@@ -701,8 +702,8 @@ class Drainage(object):
         self.dataRecvFace,self.dataRecvEdge,self.dataRecvCorner = communication.subDomainComm(self.Orientation,self.subDomain,self.boundaryData[self.subDomain.ID]['NeighborProcID'])
 
     def drainCOMMUnpack(self):
-        #### Faces ####
 
+        #### Faces ####
         for fIndex in self.Orientation.faces:
             neigh = self.subDomain.neighborF[fIndex]
             if (neigh > -1 and neigh != self.subDomain.ID):
