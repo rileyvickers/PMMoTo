@@ -362,7 +362,6 @@ def getConnectedMedialAxis(rank,grid,nodeInfo,nodeInfoIndex,nodeDirections,nodeD
   cdef int numNodesMA,numSetNodes,numNodes,numBNodes,setCount
 
   numNodesMA = np.sum(grid)
-  print("TOTAL NODES",numNodesMA)
 
   nodeIndex = np.zeros([numNodesMA,9],dtype=np.int64)
   cdef cnp.int64_t [:,::1] _nodeIndex

@@ -9,11 +9,15 @@ comm = MPI.COMM_WORLD
 """ Solid = 0, Pore = 1 """
 
 """ TO DO:
-           Switch to pass peridic info and not generate from samples??
+           Create Orientationa and Domains files. 
+           Switch to pass periodic info and not generate from samples??
            Redo Domain decomposition - Maybe
 """
 
 class Orientation(object):
+    """
+    Orientation of the voxels broken into face, edge, and corner neighbors
+    """
     def __init__(self):
         self.numFaces = 6
         self.numEdges = 12
@@ -85,7 +89,15 @@ class Orientation(object):
                          }
 
     def getSendSlices(self,structRatio,buffer):
+        """
+        Determine slices of face, edge, and corner neighbor to send data 
+        structRatio is size of voxel window to send
+        buffer is XXX
+        """
 
+        #############
+        ### Faces ###
+        #############
         for fIndex in self.faces:
             fID = self.faces[fIndex]['ID']
             for n in range(len(fID)):
@@ -102,8 +114,11 @@ class Orientation(object):
                         self.sendFSlices[fIndex,n] = slice(buf,structRatio[n]+buffer[n][0]*2)
                 else:
                     self.sendFSlices[fIndex,n] = slice(None,None)
+        #############
 
-
+        #############
+        ### Edges ###
+        #############
         for eIndex in self.edges:
             eID = self.edges[eIndex]['ID']
             for n in range(len(eID)):
@@ -120,7 +135,11 @@ class Orientation(object):
                         self.sendESlices[eIndex,n] = slice(buf,structRatio[n]+buffer[n][0]*2)
                 else:
                     self.sendESlices[eIndex,n] = slice(None,None)
+        #############
 
+        ###############
+        ### Corners ###
+        ###############
         for cIndex in self.corners:
             cID = self.corners[cIndex]['ID']
             for n in range(len(cID)):
@@ -134,12 +153,23 @@ class Orientation(object):
                     if buffer[n][0] > 0:
                         buf = buffer[n][0]*2
                     self.sendCSlices[cIndex,n] = slice(buf,structRatio[n]+buffer[n][0]*2)
+        ###############
 
     def getRecieveSlices(self,structRatio,pad,arr):
+        """
+        Determine slices of face, edge, and corner neighbor to recieve data 
+        structRatio is 
+        pad is XXX
+        arr is 
+        """
+
         dim = arr.shape
         if pad.shape != [3,2]:
             pad = pad.reshape([3,2])
 
+        #############
+        ### Faces ###
+        #############
         for fIndex in self.faces:
             fID = self.faces[fIndex]['ID']
             for n in range(len(fID)):
@@ -150,7 +180,11 @@ class Orientation(object):
                         self.recvFSlices[fIndex,n] = slice(None,structRatio[n])
                 else:
                     self.recvFSlices[fIndex,n] = slice(0+pad[n,1],dim[n]-pad[n,0])
+        #############
 
+        #############
+        ### Edges ###
+        #############
         for eIndex in self.edges:
             eID = self.edges[eIndex]['ID']
             for n in range(len(eID)):
@@ -161,7 +195,11 @@ class Orientation(object):
                         self.recvESlices[eIndex,n] = slice(None,structRatio[n])
                 else:
                     self.recvESlices[eIndex,n] = slice(0+pad[n,1],dim[n]-pad[n,0])
+        #############
 
+        ###############
+        ### Corners ###
+        ###############
         for cIndex in self.corners:
             cID = self.corners[cIndex]['ID']
             for n in range(len(cID)):
@@ -169,12 +207,16 @@ class Orientation(object):
                     self.recvCSlices[cIndex,n] = slice(-structRatio[n],None)
                 else:
                     self.recvCSlices[cIndex,n] = slice(None,structRatio[n])
+        ###############
 
 class Domain(object):
-    def __init__(self,nodes,domainSize,subDomains,periodic,inlet=[0,0,0],outlet=[0,0,0]):
+    """
+    Determine informaiton for entire Domain
+    """
+    def __init__(self,nodes,domainSize,subDomains,boundaries,inlet=[0,0,0],outlet=[0,0,0]):
         self.nodes        = nodes
         self.domainSize   = domainSize
-        self.periodic     = periodic
+        self.boundaries   = boundaries
         self.subDomains   = subDomains
         self.subNodes     = np.zeros([3])
         self.subNodesRem  = np.zeros([3])
@@ -186,6 +228,9 @@ class Domain(object):
         self.dZ = 0
 
     def getdXYZ(self):
+        """
+        Determine domain length and voxel size
+        """
         self.domainLength[0] = (self.domainSize[0,1]-self.domainSize[0,0])
         self.domainLength[1] = (self.domainSize[1,1]-self.domainSize[1,0])
         self.domainLength[2] = (self.domainSize[2,1]-self.domainSize[2,0])
@@ -194,6 +239,9 @@ class Domain(object):
         self.dZ = self.domainLength[2]/self.nodes[2]
 
     def getSubNodes(self):
+        """
+        Determine number of voxels in each subDomain
+        """
         self.subNodes[0],self.subNodesRem[0] = divmod(self.nodes[0],self.subDomains[0])
         self.subNodes[1],self.subNodesRem[1] = divmod(self.nodes[1],self.subDomains[1])
         self.subNodes[2],self.subNodesRem[2] = divmod(self.nodes[2],self.subDomains[2])
@@ -235,6 +283,10 @@ class subDomain(object):
         self.loopInfo = np.zeros([self.Orientation.numFaces+1,3,2],dtype = np.int64)
 
     def getInfo(self):
+        """
+        Gather information for each subDomain including ID, boundary information,number of nodes, global index start
+        """
+
         n = 0
         for i in range(0,self.subDomains[0]):
             for j in range(0,self.subDomains[1]):
@@ -278,20 +330,33 @@ class subDomain(object):
                     n = n + 1
 
     def getXYZ(self):
+        """
+        Determine actual coordinate information (x,y,z) and buffer information.
+        If globalBoundary and Domain.boundary == 0, buffer is not added
+        Everywhere else a buffer is added
+        """
 
-        if (self.subID[0] == 0 and not self.Domain.periodic[0]):
+        #####################################################
+        ### Determine if subDomain should not have buffer ###
+        #####################################################
+        if (self.subID[0] == 0 and self.Domain.boundaries[0] == 0):
             self.buffer[0][0] = 0
-        if (self.subID[0] == (self.subDomains[0] - 1) and not self.Domain.periodic[0]):
+        if (self.subID[0] == (self.subDomains[0] - 1) and self.Domain.boundaries[0] == 0):
             self.buffer[0][1] = 0
-        if (self.subID[1] == 0 and not self.Domain.periodic[1]):
+        if (self.subID[1] == 0 and self.Domain.boundaries[1] == 0):
             self.buffer[1][0] = 0
-        if (self.subID[1] == (self.subDomains[1] - 1) and not self.Domain.periodic[1]):
+        if (self.subID[1] == (self.subDomains[1] - 1) and self.Domain.boundaries[1] == 0):
             self.buffer[1][1] = 0
-        if (self.subID[2] == 0 and not self.Domain.periodic[2]):
+        if (self.subID[2] == 0 and self.Domain.boundaries[2] == 0):
             self.buffer[2][0] = 0
-        if (self.subID[2] == (self.subDomains[2] - 1) and not self.Domain.periodic[2]):
+        if (self.subID[2] == (self.subDomains[2] - 1) and self.Domain.boundaries[2] == 0):
             self.buffer[2][1] = 0
+        #####################################################
 
+
+        ###############################
+        ### Get (x,y,z) coordinates ###
+        ###############################
         self.x = np.zeros([self.nodes[0] + self.buffer[0][0] + self.buffer[0][1]],dtype=np.double)
         self.y = np.zeros([self.nodes[1] + self.buffer[1][0] + self.buffer[1][1]],dtype=np.double)
         self.z = np.zeros([self.nodes[2] + self.buffer[2][0] + self.buffer[2][1]],dtype=np.double)
@@ -310,6 +375,7 @@ class subDomain(object):
         for k in range(-self.buffer[2][0], self.nodes[2] + self.buffer[2][1]):
             self.z[c] = self.Domain.domainSize[2,0] + (self.indexStart[2] + k)*self.Domain.dZ + self.Domain.dZ/2
             c = c + 1
+        ###############################
 
         self.ownNodesTotal = self.nodes[0] * self.nodes[1] * self.nodes[2]
 
@@ -335,34 +401,54 @@ class subDomain(object):
                               self.y[-1] - self.y[0],
                               self.z[-1] - self.z[0]]
 
-    def genDomainSphereData(self,sphereData):
-        self.grid = domainGen(self.x,self.y,self.z,sphereData)
 
+    def gridCheck(self):
         if (np.sum(self.grid) == np.prod(self.nodes)):
             print("This code requires at least 1 solid voxel in each subdomain. Please reorder processors!")
             sys.exit()
+
+
+    def genDomainSphereData(self,sphereData):
+        self.grid = domainGen(self.x,self.y,self.z,sphereData)
+
+        self.gridCheck()
 
     def genDomainInkBottle(self):
         self.grid = domainGenINK(self.x,self.y,self.z)
 
-        if (np.sum(self.grid) == np.prod(self.nodes)):
-            print("This code requires at least 1 solid voxel in each subdomain. Please reorder processors!")
-            sys.exit()
+        self.gridCheck()
+
+    def setBoundaryConditions(self,rank):
+        """
+        If wall boundary conditions are specified, force solid on external boundaries
+        """
+        if self.boundaryID[0][0] == -1 and self.Domain.boundaries[0] == 1:
+            self.grid[0,:,:] = 0
+        if self.boundaryID[0][1] == 1  and self.Domain.boundaries[0] == 1:
+            self.grid[-1,:,:] = 0
+        if self.boundaryID[1][0] == -1 and self.Domain.boundaries[1] == 1:
+            self.grid[:,0,:] = 0
+        if self.boundaryID[1][1] == 1  and self.Domain.boundaries[1] == 1:
+            self.grid[:,-1,:] = 0
+        if self.boundaryID[2][0] == -1 and self.Domain.boundaries[2] == 1:
+            self.grid[:,:,0] = 0
+        if self.boundaryID[2][1] == 1  and self.Domain.boundaries[2] == 1:
+            self.grid[:,:,-1] = 0
 
     def getBoundaryInfo(self):
 
         rangeInfo = 2*np.ones([3,2],dtype=np.uint8)
-        if self.boundaryID[0][0] == -1 and not self.Domain.periodic[0]:
+        if self.boundaryID[0][0] == -1 and self.Domain.boundaries[0] == 0:
             rangeInfo[0,0] = rangeInfo[0,0] - 1
-        if self.boundaryID[0][1] == 1 and not self.Domain.periodic[0]:
+        if self.boundaryID[0][1] == 1 and self.Domain.boundaries[0] == 0:
             rangeInfo[0,1] = rangeInfo[0,1] - 1
-        if self.boundaryID[1][0] == -1 and not self.Domain.periodic[1]:
+        if self.boundaryID[1][0] == -1 and self.Domain.boundaries[1] == 0:
             rangeInfo[1,0] = rangeInfo[1,0] - 1
-        if self.boundaryID[1][1] == 1 and not self.Domain.periodic[1]:
+        if self.boundaryID[1][1] == 1 and self.Domain.boundaries[1] == 0:
             rangeInfo[1,1] = rangeInfo[1,1] - 1
-        if self.boundaryID[2][0] == -1 and not self.Domain.periodic[2]:
+        if self.boundaryID[2][0] == -1 and self.Domain.boundaries[2] == 0:
             rangeInfo[2,0] = rangeInfo[2,0] - 1
-        if self.boundaryID[2][1] == 1 and not self.Domain.periodic[2]:
+        if self.boundaryID[2][1] == 1 and self.Domain.boundaries[2] == 0:
             rangeInfo[2,1] = rangeInfo[2,1] - 1
 
         for fIndex in self.Orientation.faces:
@@ -411,7 +497,7 @@ class subDomain(object):
 
     def getNeighbors(self):
         """
-        Get the Face,Edge, and Corner Neighbors for Each Domain
+        Get the Face, Edge, and Corner Neighbors for Each Domain
         """
 
         lookIDPad = np.pad(self.lookUpID, ( (1, 1), (1, 1), (1, 1)), 'constant', constant_values=-1)
@@ -419,19 +505,20 @@ class subDomain(object):
         lookPerJ = np.zeros_like(lookIDPad)
         lookPerK = np.zeros_like(lookIDPad)
 
-        if (self.Domain.periodic[0] == True):
+
+        if (self.Domain.boundaries[0] == 2):
             lookIDPad[0,:,:]  = lookIDPad[-2,:,:]
             lookIDPad[-1,:,:] = lookIDPad[1,:,:]
             lookPerI[0,:,:] = 1
             lookPerI[-1,:,:] = -1
 
-        if (self.Domain.periodic[1] == True):
+        if (self.Domain.boundaries[1] == 2):
             lookIDPad[:,0,:]  = lookIDPad[:,-2,:]
             lookIDPad[:,-1,:] = lookIDPad[:,1,:]
             lookPerJ[:,0,:] = 1
             lookPerJ[:,-1,:] = -1
 
-        if (self.Domain.periodic[2] == True):
+        if (self.Domain.boundaries[2] == 2):
             lookIDPad[:,:,0]  = lookIDPad[:,:,-2]
             lookIDPad[:,:,-1] = lookIDPad[:,:,1]
             lookPerK[:,:,0] = 1
@@ -498,7 +585,7 @@ class subDomain(object):
 
 
 
-def genDomainSubDomain(rank,size,subDomains,nodes,periodic,inlet,outlet,resInd,dataFormat,domainFile,dataRead):
+def genDomainSubDomain(rank,size,subDomains,nodes,boundaries,inlet,outlet,resInd,dataFormat,domainFile,dataRead):
 
     numSubDomains = np.prod(subDomains)
     if rank == 0:
@@ -513,7 +600,7 @@ def genDomainSubDomain(rank,size,subDomains,nodes,periodic,inlet,outlet,resInd,d
         domainSize,sphereData = dataRead(domainFile)
     if domainFile is None:
         domainSize = np.array([[0.,14.],[-1.5,1.5],[-1.5,1.5]])
-    domain = Domain(nodes = nodes, domainSize = domainSize, subDomains = subDomains, periodic = periodic, inlet=inlet, outlet=outlet)
+    domain = Domain(nodes = nodes, domainSize = domainSize, subDomains = subDomains, boundaries = boundaries, inlet=inlet, outlet=outlet)
     domain.getdXYZ()
     domain.getSubNodes()
 
@@ -527,14 +614,15 @@ def genDomainSubDomain(rank,size,subDomains,nodes,periodic,inlet,outlet,resInd,d
         sD.genDomainSphereData(sphereData)
     if dataFormat == "InkBotle":
         sD.genDomainInkBottle()
+    sD.setBoundaryConditions(rank)
     sD.getBoundaryInfo()
     if resInd > 0:
         sD.getReservoir(resInd)
     sD.getPorosity()
     comm.Allreduce( [sD.poreNodes, MPI.INT], [sD.totalPoreNodes, MPI.INT], op = MPI.SUM )
 
-    loadBalancing = False
-    if loadBalancing:
+    loadBalancingCheck = False
+    if loadBalancingCheck:
         loadData = [sD.ID,sD.ownNodesTotal]
         loadData = comm.gather(loadData, root=0)
         if rank == 0:

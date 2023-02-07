@@ -49,8 +49,7 @@ def my_function():
     #nodes = [232,232,335]
     #nodes = [116,116,168]
     nodes = [201,201,201]
-    #nodes = [21,21,21]
-    periodic = [False,True,True]
+    boundaries = [0,2,2]
     inlet  = [1,0,0]
     outlet = [-1,0,0]
     file = 'testDomains/50pack.out'
@@ -66,7 +65,9 @@ def my_function():
 
     pC = [143]
 
-    domain,sDL = PMMoTo.genDomainSubDomain(rank,size,subDomains,nodes,periodic,inlet,outlet,res,"Sphere",domainFile,PMMoTo.readPorousMediaXYZR)
+    startTime = time.time()
+
+    domain,sDL = PMMoTo.genDomainSubDomain(rank,size,subDomains,nodes,boundaries,inlet,outlet,res,"Sphere",domainFile,PMMoTo.readPorousMediaXYZR)
 
     sDEDTL = PMMoTo.calcEDT(rank,size,domain,sDL,sDL.grid,stats = True)
 
@@ -76,6 +77,10 @@ def my_function():
     rad = 0.1
     sDMorphL = PMMoTo.morph(rank,size,domain,sDL,sDL.grid,rad)
     sDMAL = PMMoTo.medialAxis.medialAxisEval(rank,size,domain,sDL,sDL.grid)
+
+    endTime = time.time()
+
+    print("Parallel Time:",endTime-startTime)
 
     if testSerial:
 
@@ -132,15 +137,41 @@ def my_function():
                 gridOut = np.asarray(gridOut)
 
                 pG = [0,0,0]
-                pgSize = 41
-                if periodic[0] == True:
+                pgSize = nodes[0]
+
+                if boundaries[0] == 1:
+                    pG[0] = 1
+                if boundaries[1] == 1:
+                    pG[1] = 1
+                if boundaries[2] == 1:
+                    pG[2] = 1
+
+                periodic = [False,False,False]
+                if boundaries[0] == 2:
+                    periodic[0] = True
                     pG[0] = pgSize
-                if periodic[1] == True:
+                if boundaries[1] == 2:
+                    periodic[1] = True
                     pG[1] = pgSize
-                if periodic[2] == True:
+                if boundaries[2] == 2:
+                    periodic[2] = True
                     pG[2] = pgSize
 
                 gridOut = np.pad (gridOut, ((pG[0], pG[0]), (pG[1], pG[1]), (pG[2], pG[2])), 'wrap')
+
+                print(pG)
+
+                if boundaries[0] == 1:
+                    gridOut[0,:,:] = 0
+                    gridOut[-1,:,:] = 0
+                if boundaries[1] == 1:
+                    gridOut[:,0,:] = 0
+                    gridOut[:,-1,:] = 0
+                if boundaries[2] == 1:
+                    gridOut[:,:,0] = 0
+                    gridOut[:,:,-1] = 0
+
+
                 realDT = edt.edt3d(gridOut, anisotropy=(domain.dX, domain.dY, domain.dZ))
                 edtV,indTrue = distance_transform_edt(gridOut,sampling=[domain.dX, domain.dY, domain.dZ],return_indices=True)
                 gridCopy = np.copy(gridOut)
@@ -149,38 +180,43 @@ def my_function():
 
                 print("Serial Time:",endTime-startTime)
 
-
-                if periodic[0] and not periodic[1] and not periodic[2]:
+                if pG[0] > 0 and pG[1]==0 and pG[2]==0:
                     gridOut = gridOut[pG[0]:-pG[0],:,:]
                     realDT = realDT[pG[0]:-pG[0],:,:]
                     edtV = edtV[pG[0]:-pG[0],:,:]
                     realMA = realMA[pG[0]:-pG[0],:,:]
-                elif not periodic[0] and periodic[1] and not periodic[2]:
+
+                elif pG[0]==0 and pG[1] > 0 and pG[2]==0:
                     gridOut = gridOut[:,pG[1]:-pG[1],:]
                     realDT = realDT[:,pG[1]:-pG[1],:]
                     edtV = edtV[:,pG[1]:-pG[1],:]
                     realMA = realMA[:,pG[1]:-pG[1],:]
-                elif not periodic[0] and not periodic[1] and periodic[2]:
+
+                elif pG[0]==0 and pG[1]==0 and pG[2] > 0:
                     gridOut = gridOut[:,:,pG[2]:-pG[2]]
                     realDT = realDT[:,:,pG[2]:-pG[2]]
                     edtV = edtV[:,:,pG[2]:-pG[2]]
                     realMA = realMA[:,:,pG[2]:-pG[2]]
-                elif periodic[0] and not periodic[1] and periodic[2]:
+
+                elif pG[0] > 0 and pG[1]==0 and pG[2] > 0:
                     gridOut = gridOut[pG[0]:-pG[0],:,pG[2]:-pG[2]]
                     realDT = realDT[pG[0]:-pG[0],:,pG[2]:-pG[2]]
                     edtV = edtV[pG[0]:-pG[0],:,pG[2]:-pG[2]]
                     realMA = realMA[pG[0]:-pG[0],:,pG[2]:-pG[2]]
-                elif periodic[0] and periodic[1] and not periodic[2]:
+
+                elif pG[0] > 0 and pG[1] > 0 and pG[2]==0:
                     gridOut = gridOut[pG[0]:-pG[0],pG[1]:-pG[1],:]
                     realDT = realDT[pG[0]:-pG[0],pG[1]:-pG[1],:]
                     edtV = edtV[pG[0]:-pG[0],pG[1]:-pG[1],:]
                     realMA = realMA[pG[0]:-pG[0],pG[1]:-pG[1],:]
-                elif not periodic[0] and periodic[1] and periodic[2]:
+
+                elif pG[0]==0 and pG[1] > 0 and pG[2] > 0:
                     gridOut = gridOut[:,pG[1]:-pG[1],pG[2]:-pG[2]]
                     realDT = realDT[:,pG[1]:-pG[1],pG[2]:-pG[2]]
                     edtV = edtV[:,pG[1]:-pG[1],pG[2]:-pG[2]]
                     realMA = realMA[:,pG[1]:-pG[1],pG[2]:-pG[2]]
-                elif periodic[0] and periodic[1] and periodic[2]:
+
+                elif pG[0] > 0 and pG[1] > 0 and pG[2] > 0:
                     gridOut = gridOut[pG[0]:-pG[0],pG[1]:-pG[1],pG[2]:-pG[2]]
                     realDT = realDT[pG[0]:-pG[0],pG[1]:-pG[1],pG[2]:-pG[2]]
                     edtV = edtV[pG[0]:-pG[0],pG[1]:-pG[1],pG[2]:-pG[2]]
@@ -250,25 +286,27 @@ def my_function():
                 print("L2 MA Error Total Different Voxels",np.sum(diffMA) )
 
 
-                # c = 0
-                # printGridOut = np.zeros([gridOut.size,6])
-                # for i in range(-pG[0],gridOut.shape[0]-pG[0]):
-                #     for j in range(-pG[1],gridOut.shape[1]-pG[1]):
-                #         for k in range(-pG[2],gridOut.shape[2]-pG[2]):
-                #             printGridOut[c,0] = i#x[i]
-                #             printGridOut[c,1] = j#y[j]
-                #             printGridOut[c,2] = k#z[k]
-                #             ci = i + pG[0]
-                #             cj = j + pG[1]
-                #             ck = k + pG[2]
-                #             printGridOut[c,3] = realMA[ci,cj,ck]
-                #             printGridOut[c,4] = checkMA[ci,cj,ck]
-                #             printGridOut[c,5] = gridOut[ci,cj,ck]
-                #             c = c + 1
-                #
-                # header = "x,y,z,RealMA,CheckMA,GRID"#,Grid,Dist"
-                # file = "dataDump/3Grid.csv"
-                # np.savetxt(file,printGridOut, delimiter=',',header=header)
+                c = 0
+                printGridOut = np.zeros([gridOut.size,5])
+                for i in range(0,gridOut.shape[0]):
+                    for j in range(0,gridOut.shape[1]):
+                        for k in range(0,gridOut.shape[2]):
+                            printGridOut[c,0] = i#x[i]
+                            printGridOut[c,1] = j#y[j]
+                            printGridOut[c,2] = k#z[k]
+                            ci = i 
+                            cj = j 
+                            ck = k
+                            printGridOut[c,3] = gridOut[ci,cj,ck]
+                            printGridOut[c,4] = realMA[ci,cj,ck]
+                            #printGridOut[c,4] = checkMA[ci,cj,ck]
+                            #printGridOut[c,5] = gridOut[ci,cj,ck]
+                            c = c + 1
+                
+                header = "x,y,z,RealMA,CheckMA,GRID"#,Grid,Dist"
+                header = "i,j,k,Grid,MA"#,Grid,Dist"
+                file = "dataDump/3GridWALLS.csv"
+                np.savetxt(file,printGridOut, delimiter=',',header=header)
                 #
                 # c = 0
                 # printGridOut = np.zeros([gridOut.size,7])
@@ -334,7 +372,7 @@ def my_function():
                 for i in range(0,sD[nn].grid.shape[0]):
                     for j in range(0,sD[nn].grid.shape[1]):
                         for k in range(0,sD[nn].grid.shape[2]):
-                            if sD[nn].grid[i,j,k] == 1:
+                            #if sD[nn].grid[i,j,k] == 1:
                                 printGridOut[c,0] = sD[nn].indexStart[0] + i #sDAll[nn].x[i]
                                 printGridOut[c,1] = sD[nn].indexStart[1] + j #sDAll[nn].y[j]
                                 printGridOut[c,2] = sD[nn].indexStart[2] + k #sDAll[nn].z[k]
@@ -342,11 +380,11 @@ def my_function():
                                 printGridOut[c,4] = sDMA[nn].MA[i,j,k]
                                 printGridOut[c,5] = nn
                                 cID = sDMA[nn].nodeTable[i,j,k]
-                                printGridOut[c,6] = sDMA[nn].nodeInfo[cID,4]
+                                printGridOut[c,6] = sDMA[nn].nodeInfoIndex[cID,3]
                                 printGridOut[c,7] = cID
                                 c = c + 1
 
-                header = "x,y,z,GRID,MA,ProcID,numNeigh,cID"#,Grid,Dist"
+                header = "x,y,z,GRID,MA,ProcID,globINDEX,cID"#,Grid,Dist"
                 file = "dataDump/3dsubGrid_"+str(nn)+".csv"
                 np.savetxt(file,printGridOut, delimiter=',',header=header)
 

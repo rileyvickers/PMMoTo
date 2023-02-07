@@ -12,7 +12,6 @@ comm = MPI.COMM_WORLD
 
 """ Solid = 0, Pore = 1 """
 
-
 def _fixInterfaceCalc(self,
                      tree,
                      int faceID,
@@ -24,8 +23,9 @@ def _fixInterfaceCalc(self,
                      double minD,
                      list coords,
                      cnp.ndarray[cnp.uint8_t, ndim=1] argOrder):
-
-
+    """
+    Uses the solids from neighboring subProcessors to determine if distance is less than determined
+    """
     cdef int i,l,m,n,endL,iShape
     cdef float maxD,d
 
@@ -110,9 +110,6 @@ def _fixInterfaceCalc(self,
     return _EDT,_visited
 
 
-
-
-
 def _getBoundarySolids(self,
                        int faceID,
                        int dir,
@@ -120,7 +117,9 @@ def _getBoundarySolids(self,
                        int nS,
                        cnp.ndarray[cnp.uint8_t, ndim=3] _grid,
                        cnp.ndarray[cnp.int32_t, ndim=2] _solids):
-
+    """
+    Determine the nearest solid voxel to the boundary using optimized loops for the faces
+    """
     cdef int c,m,n
 
     _order = np.ones((3), dtype=np.uint32)
@@ -199,7 +198,6 @@ class EDT(object):
         self.edgeSolids = []
         self.cornerSolids = []
         self.solidsAll = {self.ID: {'orientID':{}}}
-
         self.grid = grid
         self.x = self.subDomain.x
         self.y = self.subDomain.y
@@ -212,10 +210,15 @@ class EDT(object):
         self.maxD = 0
 
     def genLocalEDT(self,):
+        """
+        Determine the Euclidian distance on each subProcessor knowing the values may be too high
+        """
         self.EDT = edt.edt3d(self.grid, anisotropy=(self.Domain.dX, self.Domain.dY, self.Domain.dZ))
 
     def getBoundarySolids(self):
-
+        """
+        Loop through all faces to determine the nearest pore voxels to the boundnary
+        """
         area = 2*self.grid.shape[0]*self.grid.shape[1] + 2*self.grid.shape[0]*self.grid.shape[2] + 2*self.grid.shape[1]*self.grid.shape[2]
         self.solids = -np.ones([area,4],dtype='int32')
         for fIndex in self.Orientation.faces:
@@ -247,7 +250,9 @@ class EDT(object):
             self.solidsAll[self.ID]['orientID'][name] = np.copy(self.faceSolids[fIndex])
 
     def getEdgeSolids(self):
-
+        """
+        Trim to minimize communication and reduce KD Tree. Identify on Surfaces, Edges, and Corners
+        """
         self.edgeSolids = [[] for _ in range(len(self.Orientation.edges))]
         for eIndex in self.Orientation.edges:
             edgeID = self.Orientation.edges[eIndex]['ID']
@@ -283,7 +288,9 @@ class EDT(object):
             self.edgeSolids[eIndex] = np.unique(np.array(self.edgeSolids[eIndex]),axis=0)
 
     def getCornerSolids(self):
-
+        """
+        Trim to minimize communication and reduce KD Tree. Identify on Surfaces, Edges, and Corners
+        """
         self.cornerSolids = [[] for _ in range(len(self.Orientation.corners))]
 
         for cIndex in self.Orientation.corners:
@@ -451,119 +458,7 @@ class EDT(object):
                                                       coords,
                                                       self.Orientation.faces[fIndex]['argOrder'])
 
-    def EDTCommPack(self):
-
-        self.sendData = {self.subDomain.ID: {'NeighborProcID':{}}}
-
-        for fIndex in self.Orientation.faces:
-            neigh = self.subDomain.neighborF[fIndex]
-            oppIndex = self.Orientation.faces[fIndex]['oppIndex']
-            oppNeigh = self.subDomain.neighborF[oppIndex]
-            if oppNeigh > -1 and oppNeigh not in self.sendData[self.subDomain.ID]['NeighborProcID'].keys():
-                self.sendData[self.subDomain.ID]['NeighborProcID'][oppNeigh] = {'ID':{}}
-            if (oppNeigh > -1 and neigh != self.subDomain.ID and oppNeigh in self.sendData[self.subDomain.ID]['NeighborProcID'].keys()):
-                self.sendData[self.subDomain.ID]['NeighborProcID'][oppNeigh]['ID'][fIndex] = self.faceSolids[oppIndex]
-
-        for eIndex in self.Orientation.edges:
-            neigh = self.subDomain.neighborE[eIndex]
-            oppIndex = self.Orientation.edges[eIndex]['oppIndex']
-            oppNeigh = self.subDomain.neighborE[oppIndex]
-            if oppNeigh > -1 and oppNeigh not in self.sendData[self.subDomain.ID]['NeighborProcID'].keys():
-                self.sendData[self.subDomain.ID]['NeighborProcID'][oppNeigh] = {'ID':{}}
-            if (oppNeigh > -1 and neigh != self.subDomain.ID and oppNeigh in self.sendData[self.subDomain.ID]['NeighborProcID'].keys()):
-                self.sendData[self.subDomain.ID]['NeighborProcID'][oppNeigh]['ID'][eIndex] = self.edgeSolids[oppIndex]
-
-        for cIndex in self.Orientation.corners:
-            neigh = self.subDomain.neighborC[cIndex]
-            oppIndex = self.Orientation.corners[cIndex]['oppIndex']
-            oppNeigh = self.subDomain.neighborC[oppIndex]
-            if oppNeigh > -1 and oppNeigh not in self.sendData[self.subDomain.ID]['NeighborProcID'].keys():
-                self.sendData[self.subDomain.ID]['NeighborProcID'][oppNeigh] = {'ID':{}}
-            if (oppNeigh > -1 and neigh != self.subDomain.ID and oppNeigh in self.sendData[self.subDomain.ID]['NeighborProcID'].keys()):
-                self.sendData[self.subDomain.ID]['NeighborProcID'][oppNeigh]['ID'][cIndex] = self.cornerSolids[oppIndex]
-
-    def EDTComm(self):
-
-        self.dataRecvFace,self.dataRecvEdge,self.dataRecvCorner = communication.subDomainComm(self.Orientation,self.subDomain,self.sendData[self.subDomain.ID]['NeighborProcID'])
-
-    def EDTCommUnpack(self):
-
-        #### FACE ####
-        for fIndex in self.Orientation.faces:
-            orientID = self.Orientation.faces[fIndex]['ID']
-            neigh = self.subDomain.neighborF[fIndex]
-            perFace  = self.subDomain.neighborPerF[fIndex]
-            perCorrection = perFace*self.Domain.domainLength
-
-            if (neigh > -1 and neigh != self.ID):
-                self.solidsAll[neigh]['orientID'][orientID] = self.dataRecvFace[fIndex]['ID'][fIndex]
-                if (perFace.any() != 0):
-                    self.solidsAll[neigh]['orientID'][orientID] = self.solidsAll[neigh]['orientID'][orientID]-perCorrection
-            elif (neigh == self.ID):
-                oppIndex = self.Orientation.faces[fIndex]['oppIndex']
-                self.solidsAll[neigh]['orientID'][orientID] = np.append(self.solidsAll[neigh]['orientID'][orientID],self.faceSolids[oppIndex]-perCorrection,axis=0)
-
-        # #### EDGES ####
-        for eIndex in self.Orientation.edges:
-            neigh = self.subDomain.neighborE[eIndex]
-            oppIndex = self.Orientation.edges[eIndex]['oppIndex']
-            perEdge = self.subDomain.neighborPerE[eIndex]
-            perCorrection = perEdge*self.Domain.domainLength
-            if (neigh > -1  and neigh != self.ID):
-                faceIndex = self.Orientation.edges[eIndex]['faceIndex']
-                for fIndex in faceIndex:
-                    orientID = self.Orientation.faces[fIndex]['ID']
-                    data = self.dataRecvEdge[eIndex]['ID'][eIndex]
-                    if orientID in self.solidsAll[neigh]['orientID']:
-                        if (perEdge.any() != 0):
-                            self.solidsAll[neigh]['orientID'][orientID] = np.append(self.solidsAll[neigh]['orientID'][orientID],data - perCorrection,axis=0)
-                        else:
-                            self.solidsAll[neigh]['orientID'][orientID] = np.append(self.solidsAll[neigh]['orientID'][orientID],data,axis=0)
-                    else:
-                        if (perEdge.any() != 0):
-                            self.solidsAll[neigh]['orientID'][orientID] = data - perCorrection
-                        else:
-                            self.solidsAll[neigh]['orientID'][orientID] = data
-
-            elif(neigh == self.ID):
-                faceIndex = self.Orientation.edges[eIndex]['faceIndex']
-                for fIndex in faceIndex:
-                    orientID = self.Orientation.faces[fIndex]['ID']
-                    if (perEdge.any() != 0):
-                        perCorrection = perEdge*self.Domain.domainLength
-                        self.solidsAll[neigh]['orientID'][orientID] = np.append(self.solidsAll[neigh]['orientID'][orientID],self.edgeSolids[oppIndex]-perCorrection,axis=0)
-                    else:
-                        self.solidsAll[neigh]['orientID'][orientID] = np.append(self.solidsAll[neigh]['orientID'][orientID],self.edgeSolids[oppIndex],axis=0)
-
-        #### CORNERS ####
-        for cIndex in self.Orientation.corners:
-            neigh = self.subDomain.neighborC[cIndex]
-            perCorner = self.subDomain.neighborPerC[cIndex]
-            perCorrection = perCorner*self.Domain.domainLength*self.Domain.periodic
-            if (neigh > -1 and neigh != self.ID):
-                faceIndex = self.Orientation.corners[cIndex]['faceIndex']
-                for fIndex in faceIndex:
-                    orientID = self.Orientation.faces[fIndex]['ID']
-                    data = self.dataRecvCorner[cIndex]['ID'][cIndex]
-                    if orientID in self.solidsAll[neigh]['orientID']:
-                        if (perCorner.any() != 0):
-                            self.solidsAll[neigh]['orientID'][orientID] =np.append(self.solidsAll[neigh]['orientID'][orientID],data-perCorrection,axis=0)
-                        else:
-                            self.solidsAll[neigh]['orientID'][orientID] =np.append(self.solidsAll[neigh]['orientID'][orientID],data,axis=0)
-                    else:
-                        self.solidsAll[neigh]['orientID'][orientID] = data
-                        if (perCorner.any() != 0):
-                            self.solidsAll[neigh]['orientID'][orientID] = self.solidsAll[neigh]['orientID'][orientID]-perCorrection
-            elif neigh == self.ID:
-                faceIndex = self.Orientation.corners[cIndex]['faceIndex']
-                oppIndex = self.Orientation.corners[cIndex]['oppIndex']
-                for fIndex in faceIndex:
-                    orientID = self.Orientation.faces[fIndex]['ID']
-                    if (perCorner.any() != 0):
-                        self.solidsAll[neigh]['orientID'][orientID] = np.append(self.solidsAll[neigh]['orientID'][orientID],self.cornerSolids[oppIndex]-perCorrection,axis=0)
-                    else:
-                        self.solidsAll[neigh]['orientID'][orientID] = np.append(self.solidsAll[neigh]['orientID'][orientID],self.cornerSolids[oppIndex],axis=0)
-
+  
     def genStats(self):
         own = self.subDomain.ownNodes
         ownEDT =  self.EDT[own[0][0]:own[0][1],
@@ -574,6 +469,8 @@ class EDT(object):
 def calcEDT(rank,size,domain,subDomain,grid,stats=False):
 
     sDEDT = EDT(Domain = domain, ID = rank, subDomain = subDomain, Orientation = subDomain.Orientation, grid = grid)
+    sDComm = communication.Comm(Domain = domain,subDomain = subDomain,grid = grid)
+
     sDEDT.genLocalEDT()
     if size > 1:
         sDEDT.getBoundarySolids()
@@ -581,11 +478,14 @@ def calcEDT(rank,size,domain,subDomain,grid,stats=False):
         sDEDT.getEdgeSolids()
         sDEDT.getCornerSolids()
         sDEDT.initRecieve()
-        sDEDT.EDTCommPack()
-        sDEDT.EDTComm()
-        sDEDT.EDTCommUnpack()
+        # sDEDT.EDTCommPack()
+        # sDEDT.EDTComm()
+        # sDEDT.EDTCommUnpack()
+        sDEDT.solidsAll = sDComm.EDTCommunication(sDEDT.solidsAll,sDEDT.faceSolids,sDEDT.edgeSolids,sDEDT.cornerSolids)
         sDEDT.fixInterface()
+
     if stats:
+
         sDEDT.genStats()
         EDTData = [sDEDT.ID,sDEDT.distVals,sDEDT.distCounts]
         EDTData = comm.gather(EDTData, root=0)
@@ -614,6 +514,5 @@ def calcEDT(rank,size,domain,subDomain,grid,stats=False):
         distData = comm.bcast(distData, root=0)
         sDEDT.minD = distData[0]
         sDEDT.maxD = distData[1]
-
 
     return sDEDT

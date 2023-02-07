@@ -124,6 +124,7 @@ def _compute_thin_image(pixel_type[:, :, ::1] img not None):
                 if no_change:
                     unchanged_borders += 1
 
+
     return np.asarray(img)
 
 

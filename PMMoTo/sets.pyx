@@ -246,7 +246,7 @@ def matchProcessorBoundarySets(subDomain,boundaryData,paths):
         testSetKey += 1
 
       if not matchedOut:
-          print("Set Not Matched! Hmmm",subDomain.ID,nbProc,ownSet,ownNodes,ownSet,ownBD_Set['nodes'])
+          print("Set Not Matched! Hmmm",subDomain.ID,nbProc,ownSet,ownNodes,ownBD_Set['nodes'])
 
 
   return matchedSets,matchedSetsConnections
