@@ -74,7 +74,7 @@ class medialAxis(object):
 
     def genPadding(self,grid):
         gridShape = self.Domain.subNodes
-        factor = 0.25
+        factor = 0.95
         self.padding[0] = math.ceil(gridShape[0]*factor)
         self.padding[1] = math.ceil(gridShape[1]*factor)
         self.padding[2] = math.ceil(gridShape[2]*factor)

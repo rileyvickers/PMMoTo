@@ -49,10 +49,10 @@ def my_function():
     #nodes = [232,232,335]
     #nodes = [116,116,168]
     nodes = [201,201,201]
-    boundaries = [0,2,2]
+    boundaries = [0,1,1]
     inlet  = [1,0,0]
     outlet = [-1,0,0]
-    file = 'testDomains/50pack.out'
+    file = 'testDomains/10pack.out'
     domainFile = open(file, 'r')
     #domainFile = open('kelseySpherePackTests/pack_res.out', 'r')
     res = 1 ### Assume that the reservoir is always at the inlet!
