@@ -43,7 +43,7 @@ def readPorousMediaXYZR(file):
     sphereData[0,:] = xSphere
     sphereData[1,:] = ySphere
     sphereData[2,:] = zSphere
-    sphereData[3,:] = rSphere
+    sphereData[3,:] = rSphere*rSphere
     domainFile.close()
 
     return domainDim,sphereData
@@ -99,7 +99,7 @@ def readPorousMediaLammpsDump(file, sigmaLJ=[0.25]):
     sphereData[0,:] = xSphere
     sphereData[1,:] = ySphere
     sphereData[2,:] = zSphere
-    sphereData[3,:] = rSphere
+    sphereData[3,:] = rSphere*rSphere
     domainFile.close()
 
     return domainDim, sphereData
