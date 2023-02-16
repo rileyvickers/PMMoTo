@@ -4,6 +4,7 @@ from scipy import ndimage
 import scipy.ndimage as ndi
 from scipy.ndimage import distance_transform_edt
 from scipy.spatial import KDTree
+import os
 import pdb
 import edt
 import sys
@@ -42,7 +43,7 @@ def my_function():
     if rank==0:
         start_time = time.time()
 
-    subDomains = [2,2,2]
+    subDomains = [1,1,1]
     #nodes = [928,928,1340]
     #nodes = [696,696,1005]
     #nodes = [464,464,670]
@@ -52,8 +53,8 @@ def my_function():
     boundaries = [0,1,1]
     inlet  = [1,0,0]
     outlet = [-1,0,0]
-    file = 'testDomains/10pack.out'
-    domainFile = open(file, 'r')
+    file = './testDomains/pack_sub.out'
+    # file = './testDomains/pack_sub.dump.gz'
     #domainFile = open('kelseySpherePackTests/pack_res.out', 'r')
     res = 1 ### Assume that the reservoir is always at the inlet!
 
@@ -67,7 +68,8 @@ def my_function():
 
     startTime = time.time()
 
-    domain,sDL = PMMoTo.genDomainSubDomain(rank,size,subDomains,nodes,boundaries,inlet,outlet,res,"Sphere",domainFile,PMMoTo.readPorousMediaXYZR)
+    # domain,sDL = PMMoTo.genDomainSubDomain(rank,size,subDomains,nodes,boundaries,inlet,outlet,res,"Sphere",file,PMMoTo.readPorousMediaLammpsDump)
+    domain,sDL = PMMoTo.genDomainSubDomain(rank,size,subDomains,nodes,boundaries,inlet,outlet,res,"Sphere",file,PMMoTo.readPorousMediaXYZR)
 
     sDEDTL = PMMoTo.calcEDT(rank,size,domain,sDL,sDL.grid,stats = True)
 
@@ -119,12 +121,13 @@ def my_function():
         if rank==0:
             testAlgo = True
             if testAlgo:
-
+                
+                if not os.path.exists('dataDump'):
+                    os.mkdir('dataDump')
                 startTime = time.time()
 
-                domainFile.close()
-                domainFile = open(file, 'r')
-                domainSize,sphereData = PMMoTo.readPorousMediaXYZR(domainFile)
+                domainSize,sphereData = PMMoTo.readPorousMediaXYZR(file)
+                # domainSize,sphereData = PMMoTo.readPorousMediaLammpsDump(file)
 
                 ##### To GENERATE SINGLE PROC TEST CASE ######
                 x = np.linspace(domain.dX/2, domain.domainSize[0,1]-domain.dX/2, nodes[0])
