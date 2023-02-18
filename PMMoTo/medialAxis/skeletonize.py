@@ -72,7 +72,7 @@ class medialAxis(object):
                           self.halo[3]:dim[1]-self.halo[2],
                           self.halo[5]:dim[2]-self.halo[4]]
 
-    def genPadding(self,grid):
+    def genPadding(self):
         gridShape = self.Domain.subNodes
         factor = 0.95
         self.padding[0] = math.ceil(gridShape[0]*factor)
@@ -163,30 +163,30 @@ class medialAxis(object):
 def medialAxisEval(rank,size,Domain,subDomain,grid):
     sDMA = medialAxis(Domain = Domain,subDomain = subDomain)
     sDComm = communication.Comm(Domain = Domain,subDomain = subDomain,grid = grid)
-    sDMA.genPadding(grid)
+    sDMA.genPadding()
     sDMA.haloGrid,sDMA.halo = sDComm.haloCommunication(sDMA.padding)
     sDMA.skeletonize_3d()
 
     sDMA.nodeInfo,sDMA.nodeInfoIndex,sDMA.nodeDirections,sDMA.nodeDirectionsIndex,sDMA.nodeTable = nodes.getNodeInfo(sDMA.MA,Domain,subDomain,subDomain.Orientation)
     sDMA.Sets,sDMA.setCount,sDMA.pathCount = nodes.getConnectedMedialAxis(rank,sDMA.MA,sDMA.nodeInfo,sDMA.nodeInfoIndex,sDMA.nodeDirections,sDMA.nodeDirectionsIndex)
     sDMA.boundaryData,sDMA.boundarySets,sDMA.boundSetCount = sets.getBoundarySets(sDMA.Sets,sDMA.setCount,subDomain)
-    # sDMA.collectPaths()
-    # sDMA.boundaryData = sets.setCOMM(subDomain.Orientation,subDomain,sDMA.boundaryData)
-    # sDMA.matchedSets,sDMA.matchedSetsConnections = sets.matchProcessorBoundarySets(subDomain,sDMA.boundaryData,True)
-    # setData = [sDMA.matchedSets,sDMA.setCount,sDMA.boundSetCount,sDMA.pathCount,sDMA.boundPathCount]
-    # setData = comm.gather(setData, root=0)
+    sDMA.collectPaths()
+    sDMA.boundaryData = sets.setCOMM(subDomain.Orientation,subDomain,sDMA.boundaryData)
+    sDMA.matchedSets,sDMA.matchedSetsConnections = sets.matchProcessorBoundarySets(subDomain,sDMA.boundaryData,True)
+    setData = [sDMA.matchedSets,sDMA.setCount,sDMA.boundSetCount,sDMA.pathCount,sDMA.boundPathCount]
+    setData = comm.gather(setData, root=0)
 
-    # connectedSetData =  comm.allgather(sDMA.matchedSetsConnections)
-    # globalIndexStart,globalBoundarySetID,globalPathIndexStart,globalPathBoundarySetID = sets.organizePathAndSets(subDomain,size,setData,True)
-    # sets.updateSetPathID(rank,sDMA.Sets,globalIndexStart,globalBoundarySetID,globalPathIndexStart,globalPathBoundarySetID)
-    # sDMA.updatePaths(globalPathIndexStart,globalPathBoundarySetID)
-    # sDMA.updateConnectedSetsID(connectedSetData)
-    # connectedSetIDs =  comm.allgather(sDMA.connectedSetIDs)
-    # # if rank == 0:
-    # #     for s in sDMA.Sets:
-    # #         print(rank,s.localID,s.globalID,s.type,s.globalConnectedSets,s.localConnectedSets)
-    # sets.getGlobalConnectedSets(sDMA.Sets,connectedSetData[rank],connectedSetIDs)
-    # # if rank == 0:
-    # #     for s in sDMA.Sets:
-    # #         print(rank,s.localID,s.globalID,s.type,s.globalConnectedSets,s.localConnectedSets)
+    connectedSetData =  comm.allgather(sDMA.matchedSetsConnections)
+    globalIndexStart,globalBoundarySetID,globalPathIndexStart,globalPathBoundarySetID = sets.organizePathAndSets(subDomain,size,setData,True)
+    sets.updateSetPathID(rank,sDMA.Sets,globalIndexStart,globalBoundarySetID,globalPathIndexStart,globalPathBoundarySetID)
+    sDMA.updatePaths(globalPathIndexStart,globalPathBoundarySetID)
+    sDMA.updateConnectedSetsID(connectedSetData)
+    connectedSetIDs =  comm.allgather(sDMA.connectedSetIDs)
+    # if rank == 0:
+    #     for s in sDMA.Sets:
+    #         print(rank,s.localID,s.globalID,s.type,s.globalConnectedSets,s.localConnectedSets)
+    sets.getGlobalConnectedSets(sDMA.Sets,connectedSetData[rank],connectedSetIDs)
+    # if rank == 0:
+    #     for s in sDMA.Sets:
+    #         print(rank,s.localID,s.globalID,s.type,s.globalConnectedSets,s.localConnectedSets)
     return sDMA
