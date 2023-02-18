@@ -1,17 +1,10 @@
 import numpy as np
 from mpi4py import MPI
-from scipy import ndimage
-import scipy.ndimage as ndi
 from scipy.ndimage import distance_transform_edt
-from scipy.spatial import KDTree
 import os
-import pdb
 import edt
-import sys
 import time
 import PMMoTo
-import math
-from skimage.morphology import skeletonize
 
 import cProfile
 
@@ -43,17 +36,17 @@ def my_function():
     if rank==0:
         start_time = time.time()
 
-    subDomains = [1,1,1]
+    subDomains = [2,2,2]
     #nodes = [928,928,1340]
     #nodes = [696,696,1005]
     #nodes = [464,464,670]
     #nodes = [232,232,335]
     #nodes = [116,116,168]
-    nodes = [201,201,201]
-    boundaries = [0,1,1]
+    nodes = [51,51,51]
+    boundaries = [0,0,0]
     inlet  = [1,0,0]
     outlet = [-1,0,0]
-    file = './testDomains/pack_sub.out'
+    file = './testDomains/50pack.out'
     # file = './testDomains/pack_sub.dump.gz'
     #domainFile = open('kelseySpherePackTests/pack_res.out', 'r')
     res = 1 ### Assume that the reservoir is always at the inlet!
@@ -74,7 +67,7 @@ def my_function():
     sDEDTL = PMMoTo.calcEDT(rank,size,domain,sDL,sDL.grid,stats = True)
 
     if drain:
-        drainL,morphLTOSS = PMMoTo.calcDrainage(rank,size,pC,domain,sDL,inlet,sDEDTL)
+        drainL,_ = PMMoTo.calcDrainage(rank,size,pC,domain,sDL,inlet,sDEDTL)
 
     rad = 0.1
     sDMorphL = PMMoTo.morph(rank,size,domain,sDL,sDL.grid,rad)
@@ -126,16 +119,14 @@ def my_function():
                     os.mkdir('dataDump')
                 startTime = time.time()
 
-                domainSize,sphereData = PMMoTo.readPorousMediaXYZR(file)
+                _,sphereData = PMMoTo.readPorousMediaXYZR(file)
                 # domainSize,sphereData = PMMoTo.readPorousMediaLammpsDump(file)
 
                 ##### To GENERATE SINGLE PROC TEST CASE ######
                 x = np.linspace(domain.dX/2, domain.domainSize[0,1]-domain.dX/2, nodes[0])
                 y = np.linspace(domain.dY/2, domain.domainSize[1,1]-domain.dY/2, nodes[1])
                 z = np.linspace(domain.dZ/2, domain.domainSize[2,1]-domain.dZ/2, nodes[2])
-                xyz = np.meshgrid(x,y,z,indexing='ij')
 
-                grid = np.ones([nodes[0],nodes[1],nodes[2]],dtype=np.integer)
                 gridOut = PMMoTo.domainGen(x,y,z,sphereData)
                 gridOut = np.asarray(gridOut)
 
@@ -503,3 +494,4 @@ def my_function():
 
 if __name__ == "__main__":
     my_function()
+    #MPI.Finalize()

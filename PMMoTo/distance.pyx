@@ -478,9 +478,6 @@ def calcEDT(rank,size,domain,subDomain,grid,stats=False):
         sDEDT.getEdgeSolids()
         sDEDT.getCornerSolids()
         sDEDT.initRecieve()
-        # sDEDT.EDTCommPack()
-        # sDEDT.EDTComm()
-        # sDEDT.EDTCommUnpack()
         sDEDT.solidsAll = sDComm.EDTCommunication(sDEDT.solidsAll,sDEDT.faceSolids,sDEDT.edgeSolids,sDEDT.cornerSolids)
         sDEDT.fixInterface()
 

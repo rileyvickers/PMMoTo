@@ -163,8 +163,14 @@ class medialAxis(object):
 def medialAxisEval(rank,size,Domain,subDomain,grid):
     sDMA = medialAxis(Domain = Domain,subDomain = subDomain)
     sDComm = communication.Comm(Domain = Domain,subDomain = subDomain,grid = grid)
+
+    ### Adding Padding so Identical MA at processer interfaces
     sDMA.genPadding()
+
+    ### Send Padding 
     sDMA.haloGrid,sDMA.halo = sDComm.haloCommunication(sDMA.padding)
+
+    ### Determine MA
     sDMA.skeletonize_3d()
 
     sDMA.nodeInfo,sDMA.nodeInfoIndex,sDMA.nodeDirections,sDMA.nodeDirectionsIndex,sDMA.nodeTable = nodes.getNodeInfo(sDMA.MA,Domain,subDomain,subDomain.Orientation)
@@ -182,11 +188,6 @@ def medialAxisEval(rank,size,Domain,subDomain,grid):
     sDMA.updatePaths(globalPathIndexStart,globalPathBoundarySetID)
     sDMA.updateConnectedSetsID(connectedSetData)
     connectedSetIDs =  comm.allgather(sDMA.connectedSetIDs)
-    # if rank == 0:
-    #     for s in sDMA.Sets:
-    #         print(rank,s.localID,s.globalID,s.type,s.globalConnectedSets,s.localConnectedSets)
     sets.getGlobalConnectedSets(sDMA.Sets,connectedSetData[rank],connectedSetIDs)
-    # if rank == 0:
-    #     for s in sDMA.Sets:
-    #         print(rank,s.localID,s.globalID,s.type,s.globalConnectedSets,s.localConnectedSets)
+
     return sDMA

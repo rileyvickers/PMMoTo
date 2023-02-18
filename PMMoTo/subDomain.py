@@ -2,6 +2,7 @@ import numpy as np
 from mpi4py import MPI
 from .domainGeneration import domainGenINK
 from .domainGeneration import domainGen
+from . import communication
 import sys
 import pdb
 comm = MPI.COMM_WORLD
@@ -211,7 +212,7 @@ class Orientation(object):
 
 class Domain(object):
     """
-    Determine informaiton for entire Domain
+    Determine information for entire Domain
     """
     def __init__(self,nodes,domainSize,subDomains,boundaries,inlet=[0,0,0],outlet=[0,0,0]):
         self.nodes        = nodes
@@ -229,7 +230,7 @@ class Domain(object):
 
     def getdXYZ(self):
         """
-        Determine domain length and voxel size
+        Get domain length and voxel size
         """
         self.domainLength[0] = (self.domainSize[0,1]-self.domainSize[0,0])
         self.domainLength[1] = (self.domainSize[1,1]-self.domainSize[1,0])
@@ -240,7 +241,7 @@ class Domain(object):
 
     def getSubNodes(self):
         """
-        Determine number of voxels in each subDomain
+        Calculate number of voxels in each subDomain
         """
         self.subNodes[0],self.subNodesRem[0] = divmod(self.nodes[0],self.subDomains[0])
         self.subNodes[1],self.subNodesRem[1] = divmod(self.nodes[1],self.subDomains[1])
@@ -588,10 +589,11 @@ class subDomain(object):
 def genDomainSubDomain(rank,size,subDomains,nodes,boundaries,inlet,outlet,resInd,dataFormat,file,dataRead):
 
     numSubDomains = np.prod(subDomains)
-    if rank == 0:
-        if (size != numSubDomains):
-            print("Number of Subdomains Must Equal Number of Processors!")
-            #exit()
+
+    if (size != numSubDomains):
+        if rank==0: 
+            print("Number of Subdomains Must Equal Number of Processors!...Exiting")
+        communication.raiseError()
 
     totalNodes = np.prod(nodes)
 

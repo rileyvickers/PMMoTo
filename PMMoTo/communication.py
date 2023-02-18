@@ -1,6 +1,12 @@
 import numpy as np
 from mpi4py import MPI
+import sys
 comm = MPI.COMM_WORLD
+
+
+def raiseError():
+    MPI.Finalize()
+    sys.exit()
 
 def subDomainComm(Orientation,subDomain,sendData):
 
@@ -80,6 +86,7 @@ class Comm(object):
         self.grid = grid
         self.halo = np.zeros([6],dtype=np.int64)
         self.haloData = {self.subDomain.ID: {'NeighborProcID':{}}}
+   
 
     def haloCommPack(self,size):
 
