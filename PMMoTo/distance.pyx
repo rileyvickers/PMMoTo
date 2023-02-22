@@ -7,11 +7,14 @@ from mpi4py import MPI
 from pykdtree.kdtree import KDTree
 import edt
 from . import communication
+cimport cython
 
 comm = MPI.COMM_WORLD
 
 """ Solid = 0, Pore = 1 """
 
+@cython.boundscheck(False)  # Deactivate bounds checking
+@cython.wraparound(False)   # Deactivate negative indexing.
 def _fixInterfaceCalc(self,
                      tree,
                      int faceID,
@@ -29,8 +32,8 @@ def _fixInterfaceCalc(self,
     cdef int i,l,m,n,endL,iShape
     cdef float maxD,d
 
-    _orderG = np.ones((1,3), dtype=np.double)
-    _orderL = np.ones((3), dtype=np.uint32)
+    _orderG = np.ones((1,3), dtype=np.double) #Global Order
+    _orderL = np.ones((3), dtype=np.uint32)   #Local Order
     cdef cnp.uint32_t [:] orderL
     orderL = _orderL
 
@@ -331,90 +334,6 @@ class EDT(object):
             truth2 = (dom21 <= face3[:,1+plusArg]) & (face3[:,1+plusArg] <= dom22)
             self.cornerSolids[cIndex] = np.append(self.cornerSolids[cIndex], face3[np.where(truth1 & truth2)],axis=0)
 
-    def fixInterfaceCalc(self,tree,faceID):
-
-        order  = [None]*3
-        orderL = [None]*3
-        nC  = self.Orientation.faces[faceID]['nC']
-        nM  = self.Orientation.faces[faceID]['nM']
-        nN  = self.Orientation.faces[faceID]['nN']
-        dir = self.Orientation.faces[faceID]['dir']
-        coords = [self.x,self.y,self.z]
-        minD = min(self.Domain.dX,self.Domain.dY,self.Domain.dZ)
-
-        faceSolids = self.solids[np.where(self.solids[:,3]==faceID)][:,0:3]
-
-        if (dir == 1):
-            for i in range(0,faceSolids.shape[0]):
-
-                if faceSolids[i,nC] < 0:
-                    endL = self.grid.shape[nC]
-                else:
-                    endL = faceSolids[i,nC]
-
-                distChanged = True
-                l = 0
-                while distChanged and l < endL:
-                    cL = l
-                    cM = faceSolids[i,nM]
-                    cN = faceSolids[i,nN]
-
-                    m = cM
-                    n = cN
-
-                    order[nC] = coords[nC][cL]
-                    order[nM] = coords[nM][cM]
-                    order[nN] = coords[nN][cN]
-                    orderL[nC] = l
-                    orderL[nM] = cM
-                    orderL[nN] = cN
-
-                    maxD = self.EDT[orderL[0],orderL[1],orderL[2]]
-                    if (maxD > minD):
-                        d,ind = tree.query([order],p=2,distance_upper_bound=maxD)
-                        if d < maxD:
-                            self.EDT[orderL[0],orderL[1],orderL[2]] = d
-                            distChanged = True
-                            self.visited[orderL[0],orderL[1],orderL[2]] = 1
-                        elif self.visited[orderL[0],orderL[1],orderL[2]] == 0:
-                            distChanged = False
-                    l = l + 1
-
-        if (dir == -1):
-            for i in range(0,faceSolids.shape[0]):
-
-                if faceSolids[i,nC] < 0:
-                    endL = 0
-                else:
-                    endL = faceSolids[i,nC]
-
-                distChanged = True
-                l = self.grid.shape[nC] - 1
-
-                while distChanged and l > endL:
-                    cL = l
-                    cM = faceSolids[i,nM]
-                    cN = faceSolids[i,nN]
-                    m = cM
-                    n = cN
-                    order[nC] = coords[nC][cL]
-                    order[nM] = coords[nM][cM]
-                    order[nN] = coords[nN][cN]
-                    orderL[nC] = l
-                    orderL[nM] = m
-                    orderL[nN] = n
-
-                    maxD = self.EDT[orderL[0],orderL[1],orderL[2]]
-                    if (maxD > minD):
-                        d,ind = tree.query([order],p=2,distance_upper_bound=maxD)
-                        if d < maxD:
-                            self.EDT[orderL[0],orderL[1],orderL[2]] = d
-                            distChanged = True
-                            self.visited[orderL[0],orderL[1],orderL[2]] = 1
-                        elif self.visited[orderL[0],orderL[1],orderL[2]] == 0:
-                            distChanged = False
-                    l = l - 1
-
     def initRecieve(self):
 
         for neigh in self.subDomain.neighborF:
@@ -479,7 +398,9 @@ def calcEDT(rank,size,domain,subDomain,grid,stats=False):
         sDEDT.getCornerSolids()
         sDEDT.initRecieve()
         sDEDT.solidsAll = sDComm.EDTCommunication(sDEDT.solidsAll,sDEDT.faceSolids,sDEDT.edgeSolids,sDEDT.cornerSolids)
-        sDEDT.fixInterface()
+        if rank ==0:
+            print(sDEDT.solidsAll)
+        #sDEDT.fixInterface()
 
     if stats:
 

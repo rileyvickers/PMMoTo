@@ -36,7 +36,7 @@ def my_function():
     if rank==0:
         start_time = time.time()
 
-    subDomains = [2,2,2]
+    subDomains = [2,2,1]
     #nodes = [928,928,1340]
     #nodes = [696,696,1005]
     #nodes = [464,464,670]
@@ -53,9 +53,9 @@ def my_function():
 
     numSubDomains = np.prod(subDomains)
 
-
     drain = False
     testSerial = True
+    testAlgo = True
 
     pC = [143]
 
@@ -71,7 +71,7 @@ def my_function():
 
     rad = 0.1
     sDMorphL = PMMoTo.morph(rank,size,domain,sDL,sDL.grid,rad)
-    sDMAL = PMMoTo.medialAxis.medialAxisEval(rank,size,domain,sDL,sDL.grid)
+    sDMAL = PMMoTo.medialAxis.medialAxisEval(rank,size,domain,sDL,sDL.grid,sDEDTL.EDT)
 
     endTime = time.time()
 
@@ -112,7 +112,6 @@ def my_function():
 
 
         if rank==0:
-            testAlgo = True
             if testAlgo:
                 
                 if not os.path.exists('dataDump'):
@@ -385,7 +384,7 @@ def my_function():
 
             for nn in range(0,numSubDomains):
                 c = 0
-                printGridOut = np.zeros([np.sum(sDMA[nn].MA),12])
+                printGridOut = np.zeros([np.sum(sDMA[nn].MA),16])
                 for ss in range(0,sDMA[nn].setCount):
                     #print(nn,ss,sDMA[nn].Sets[ss].localID,sDMA[nn].Sets[ss].globalID)
                     for no in sDMA[nn].Sets[ss].nodes:
@@ -402,9 +401,13 @@ def my_function():
                         printGridOut[c,9] = sDMA[nn].Sets[ss].inlet
                         printGridOut[c,10] = sDMA[nn].Sets[ss].outlet
                         printGridOut[c,11] = sDEDT[nn].EDT[no[0],no[1],no[2]]
+                        printGridOut[c,12] = sDMA[nn].Sets[ss].minDistance
+                        printGridOut[c,13] = sDMA[nn].Sets[ss].maxDistance
+                        printGridOut[c,14] = sDMA[nn].Sets[ss].trim
+                        printGridOut[c,15] = len(sDMA[nn].Sets[ss].localConnectedSets)
                         c = c + 1
 
-                header = "x,y,z,SetID,ProcID,TYPE,ID,pathID,globalID,Inlet,Outlet,Dist"#,Grid,Dist"
+                header = "x,y,z,SetID,ProcID,TYPE,ID,pathID,globalID,Inlet,Outlet,Dist,MinD,MAXD,TRIM,LenSets"#,Grid,Dist"
                 file = "dataDump/3dsubGridMA_"+str(nn)+".csv"
                 np.savetxt(file,printGridOut, delimiter=',',header=header)
 
@@ -494,4 +497,4 @@ def my_function():
 
 if __name__ == "__main__":
     my_function()
-    #MPI.Finalize()
+    MPI.Finalize()
