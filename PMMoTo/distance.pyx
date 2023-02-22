@@ -398,9 +398,7 @@ def calcEDT(rank,size,domain,subDomain,grid,stats=False):
         sDEDT.getCornerSolids()
         sDEDT.initRecieve()
         sDEDT.solidsAll = sDComm.EDTCommunication(sDEDT.solidsAll,sDEDT.faceSolids,sDEDT.edgeSolids,sDEDT.cornerSolids)
-        if rank ==0:
-            print(sDEDT.solidsAll)
-        #sDEDT.fixInterface()
+        sDEDT.fixInterface()
 
     if stats:
 
