@@ -9,7 +9,7 @@ references/
 PMMoTo.egg-info/
 PMMoTo/__pycache__/
 PMMoTo/tmp/
-PMMoTo/*.c	
+PMMoTo/*.c
 PMMoTo/*.html
 PMMoTo/distanceSAVE.pyx
 PMMoTo/medialAxis/_skeletonize_3d_ORDER_cy.pyx.in
