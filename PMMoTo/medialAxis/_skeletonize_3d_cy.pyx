@@ -32,6 +32,7 @@ References
 from libc.string cimport memcpy
 from libcpp.vector cimport vector
 from libc.stdio cimport printf
+from libcpp cimport bool
 
 import numpy as np
 from numpy cimport npy_intp, npy_uint8, ndarray
@@ -45,7 +46,10 @@ cdef struct coordinate:
     npy_intp r
     npy_intp c
     npy_intp ID
+    npy_intp faceCount
 
+cdef bool compare(coordinate l, const coordinate r) nogil:
+    return l.c > r.c;
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -85,44 +89,45 @@ def _compute_thin_image(pixel_type[:, :, ::1] img not None):
     # loop over the six directions in this order (for consistency with ImageJ)
     borders[:] = [4,3,2,1,5,6]
 
-    with nogil:
-        # no need to worry about the z direction if the original image is 2D.
-        if img.shape[0] == 3:
-            num_borders = 4
-        else:
-            num_borders = 6
+    #with nogil:
+    # no need to worry about the z direction if the original image is 2D.
+    if img.shape[0] == 3:
+        num_borders = 4
+    else:
+        num_borders = 6
 
-        # loop through the image several times until there is no change for all
-        # the six border types
-        while unchanged_borders < num_borders:
-            unchanged_borders = 0
-            for j in range(num_borders):
-                curr_border = borders[j]
-                simple_border_points.clear();
-                find_simple_point_candidates_boundary(img, curr_border, simple_border_points)
-                find_simple_point_candidates(img, curr_border, simple_border_points)
+    # loop through the image several times until there is no change for all
+    # the six border types
+    while unchanged_borders < num_borders:
+        unchanged_borders = 0
+        for j in range(num_borders):
+            curr_border = borders[j]
+            simple_border_points.clear();
+            find_simple_point_candidates_boundary(img, curr_border, simple_border_points)
+            find_simple_point_candidates(img, curr_border, simple_border_points)
 
-                #find_simple_point_candidates_boundary(img, curr_border, simple_border_points)
-                # sequential re-checking to preserve connectivity when deleting
-                # in a parallel way
-                no_change = True
-                num_border_points = simple_border_points.size()
-                for i in range(num_border_points):
-                    point = simple_border_points[i]
-                    p = point.p
-                    r = point.r
-                    c = point.c
-                    ID = point.ID
-                    if ID == 0:
-                        get_neighborhood(img, p, r, c, neighb)
-                    elif ID > 0:
-                        get_neighborhood_limited(img, p, r, c, ID, neighb)
-                    if is_simple_point(neighb):
-                        img[p, r, c] = 0
-                        no_change = False
+            #find_simple_point_candidates_boundary(img, curr_border, simple_border_points)
+            # sequential re-checking to preserve connectivity when deleting
+            # in a parallel way
+            no_change = True
+            num_border_points = simple_border_points.size()
+            simple_border_points = sorted(simple_border_points, key=lambda d: d['faceCount'],reverse=True)
+            for i in range(num_border_points):
+                point = simple_border_points[i]
+                p = point.p
+                r = point.r
+                c = point.c
+                ID = point.ID
+                if ID == 0:
+                    get_neighborhood(img, p, r, c, neighb)
+                elif ID > 0:
+                    get_neighborhood_limited(img, p, r, c, ID, neighb)
+                if is_simple_point(neighb):
+                    img[p, r, c] = 0
+                    no_change = False
 
-                if no_change:
-                    unchanged_borders += 1
+            if no_change:
+                unchanged_borders += 1
 
 
     return np.asarray(img)
@@ -195,6 +200,7 @@ cdef void find_simple_point_candidates(pixel_type[:, :, ::1] img,
                 point.r = r
                 point.c = c
                 point.ID = 0
+                point.faceCount = is_endpoint_check(neighborhood)
                 simple_border_points.push_back(point)
 
 
@@ -1999,6 +2005,7 @@ cdef void find_simple_point_candidates_faces_0(pixel_type[:, :, ::1] img,
                 point.r = r
                 point.c = c
                 point.ID = 10
+                point.faceCount = is_endpoint_check(neighborhood)
                 simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
@@ -2052,6 +2059,7 @@ cdef void find_simple_point_candidates_faces_1(pixel_type[:, :, ::1] img,
                 point.r = r
                 point.c = c
                 point.ID = 11
+                point.faceCount = is_endpoint_check(neighborhood)
                 simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
@@ -2105,6 +2113,7 @@ cdef void find_simple_point_candidates_faces_2(pixel_type[:, :, ::1] img,
                 point.r = r
                 point.c = c
                 point.ID = 12
+                point.faceCount = is_endpoint_check(neighborhood)
                 simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
@@ -2158,6 +2167,7 @@ cdef void find_simple_point_candidates_faces_3(pixel_type[:, :, ::1] img,
                 point.r = r
                 point.c = c
                 point.ID = 13
+                point.faceCount = is_endpoint_check(neighborhood)
                 simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
@@ -2211,6 +2221,7 @@ cdef void find_simple_point_candidates_faces_4(pixel_type[:, :, ::1] img,
                 point.r = r
                 point.c = c
                 point.ID = 14
+                point.faceCount = is_endpoint_check(neighborhood)
                 simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
@@ -2264,6 +2275,7 @@ cdef void find_simple_point_candidates_faces_5(pixel_type[:, :, ::1] img,
                 point.r = r
                 point.c = c
                 point.ID = 15
+                point.faceCount = is_endpoint_check(neighborhood)
                 simple_border_points.push_back(point)
 
 @cython.boundscheck(False)
