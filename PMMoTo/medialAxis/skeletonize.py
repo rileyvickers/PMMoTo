@@ -184,10 +184,11 @@ def medialAxisEval(rank,size,Domain,subDomain,grid):
 
     connectedSetData =  comm.allgather(sDMA.matchedSetsConnections)
     globalIndexStart,globalBoundarySetID,globalPathIndexStart,globalPathBoundarySetID = sets.organizePathAndSets(subDomain,size,setData,True)
-    sets.updateSetPathID(rank,sDMA.Sets,globalIndexStart,globalBoundarySetID,globalPathIndexStart,globalPathBoundarySetID)
-    sDMA.updatePaths(globalPathIndexStart,globalPathBoundarySetID)
-    sDMA.updateConnectedSetsID(connectedSetData)
-    connectedSetIDs =  comm.allgather(sDMA.connectedSetIDs)
-    sets.getGlobalConnectedSets(sDMA.Sets,connectedSetData[rank],connectedSetIDs)
+    if size > 1:
+        sets.updateSetPathID(rank,sDMA.Sets,globalIndexStart,globalBoundarySetID,globalPathIndexStart,globalPathBoundarySetID)
+        sDMA.updatePaths(globalPathIndexStart,globalPathBoundarySetID)
+        sDMA.updateConnectedSetsID(connectedSetData)
+        connectedSetIDs =  comm.allgather(sDMA.connectedSetIDs)
+        sets.getGlobalConnectedSets(sDMA.Sets,connectedSetData[rank],connectedSetIDs)
 
     return sDMA
